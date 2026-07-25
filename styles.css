@@ -44,6 +44,8 @@ html, body {
   color: var(--text);
   font-family: var(--font-body);
   -webkit-font-smoothing: antialiased;
+  overflow-x: hidden; /* evita que cualquier elemento ancho empuje la página entera */
+  max-width: 100vw;
 }
 
 button, input, select {
@@ -454,7 +456,16 @@ a { color: var(--accent-strong); }
 .barra-filtros input[type="search"] { flex: 1; min-width: 200px; }
 .barra-filtros select:focus, .barra-filtros input:focus { border-color: var(--accent); }
 
-.tabla-documentos { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+/* Contenedor con su propio scroll horizontal: si la tabla no cabe en pantallas
+   angostas, se desliza ella sola en vez de desbordar toda la página. */
+.tabla-documentos-wrap {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: var(--radius-sm);
+}
+
+.tabla-documentos { width: 100%; min-width: 620px; border-collapse: collapse; font-size: 13.5px; }
 .tabla-documentos th {
   text-align: left;
   color: var(--text-muted);
@@ -464,14 +475,25 @@ a { color: var(--accent-strong); }
   letter-spacing: 0.04em;
   padding: 10px 12px;
   border-bottom: 1px solid var(--border);
+  white-space: nowrap;
 }
 .tabla-documentos td {
   padding: 11px 12px;
   border-bottom: 1px solid var(--border);
 }
 .tabla-documentos tr:hover td { background: var(--surface); }
-.tabla-documentos .fecha-mono { font-family: var(--font-mono); color: var(--text-muted); font-size: 12.5px; }
+.tabla-documentos .fecha-mono { font-family: var(--font-mono); color: var(--text-muted); font-size: 12.5px; white-space: nowrap; }
 .tabla-documentos a { text-decoration: none; font-weight: 600; }
+
+/* Nombre de archivo y carpeta: se truncan con "…" en vez de estirar la columna
+   cuando el nombre es muy largo (evita que la tabla se ensanche de más). */
+.tabla-documentos td:first-child,
+.tabla-documentos td:nth-child(2) {
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
 .estado-vacio {
   text-align: center;
