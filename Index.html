@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Archivo Personal — COMPUKELC</title>
+
+<!-- PWA -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0B0F17">
+<link rel="apple-touch-icon" href="logo.png">
+
+<link rel="stylesheet" href="styles.css">
+
+<!-- Librería para generar PDFs desde imágenes escaneadas (módulo de escáner) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+
+<div class="fondo-grid"></div>
+
+<!-- =====================================================================================
+     VISTA: LOGIN
+===================================================================================== -->
+<section id="vista-login">
+  <div class="login-glow"></div>
+  <form class="tarjeta-login" id="form-login" autocomplete="off">
+    <div class="login-logo-wrap">
+      <!-- CAMBIA AQUÍ: reemplaza logo.png por el archivo de tu logo exportado desde Drive -->
+      <img src="logo.png" alt="Logo COMPUKELC" onerror="this.style.display='none'">
+    </div>
+    <h1>Archivo Personal</h1>
+    <p class="subtitulo">COMPUKELC · acceso privado</p>
+
+    <div id="login-error" class="mensaje-error oculto"></div>
+
+    <div class="campo">
+      <label for="input-usuario">Usuario</label>
+      <input type="text" id="input-usuario" placeholder="tu.usuario" required>
+    </div>
+
+    <div class="campo">
+      <label for="input-clave">Contraseña</label>
+      <div class="campo-password-wrap">
+        <input type="password" id="input-clave" placeholder="••••••••" required>
+        <button type="button" class="btn-ojo" id="btn-toggle-clave" aria-label="Mostrar contraseña">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <label class="fila-recordar">
+      <input type="checkbox" id="input-recordar">
+      Recordar mi usuario en este equipo
+    </label>
+
+    <button type="submit" class="btn-primario" id="btn-login">Iniciar sesión</button>
+  </form>
+</section>
+
+<!-- =====================================================================================
+     VISTA: APLICACIÓN (dashboard)
+===================================================================================== -->
+<section id="vista-app" class="oculto">
+
+  <aside class="sidebar">
+    <div class="sidebar-marca">
+      <img src="logo.png" alt="Logo" onerror="this.style.display='none'">
+      <span>COMPUKELC</span>
+    </div>
+
+    <button class="nav-item activo" data-vista="subir">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0-12l-4 4m4-4l4 4"/><path d="M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
+      Subir archivos
+    </button>
+    <button class="nav-item" data-vista="documentos">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>
+      Documentos
+    </button>
+    <button class="nav-item" data-vista="escaner">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7V5a1 1 0 011-1h2M4 17v2a1 1 0 001 1h2M20 7V5a1 1 0 00-1-1h-2M20 17v2a1 1 0 01-1 1h-2"/><rect x="7" y="9" width="10" height="6" rx="1"/></svg>
+      Escáner
+    </button>
+
+    <div class="sidebar-pie">
+      <div class="usuario-chip">
+        <span class="nombre" id="chip-nombre">—</span>
+        <span class="cargo" id="chip-cargo">—</span>
+      </div>
+      <button class="btn-salir" id="btn-logout">Cerrar sesión</button>
+    </div>
+  </aside>
+
+  <main class="contenido">
+
+    <!-- ---------- SECCIÓN: SUBIR ARCHIVOS ---------- -->
+    <div class="seccion" id="seccion-subir">
+      <div class="encabezado-seccion">
+        <h2>Subir archivos</h2>
+        <p>Selecciona uno o varios archivos. Las imágenes se comprimen automáticamente antes de enviarse.</p>
+      </div>
+
+      <div class="panel">
+        <div class="dropzone" id="dropzone">
+          <div class="linea-escaneo"></div>
+          <div class="icono-subida">
+            <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v12m0-12l-4 4m4-4l4 4"/><path d="M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
+          </div>
+          <p><strong>Haz clic para elegir archivos</strong> o arrástralos aquí</p>
+          <p class="hint">Cualquier tipo de archivo · selección múltiple</p>
+          <input type="file" id="input-archivos" multiple class="oculto">
+        </div>
+
+        <div class="lista-archivos" id="lista-archivos"></div>
+
+        <div class="campo-carpeta">
+          <label for="input-carpeta">Carpeta de destino</label>
+          <input type="text" id="input-carpeta" list="lista-carpetas" placeholder="Escribe o elige una carpeta…" autocomplete="off">
+          <datalist id="lista-carpetas"></datalist>
+        </div>
+
+        <div class="acciones-fila">
+          <button class="btn-primario" id="btn-subir" disabled>Subir a Drive</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ---------- SECCIÓN: DOCUMENTOS ---------- -->
+    <div class="seccion oculto" id="seccion-documentos">
+      <div class="encabezado-seccion">
+        <h2>Documentos</h2>
+        <p>Filtra por fecha o busca por nombre — sin importar mayúsculas, tildes u ortografía exacta.</p>
+      </div>
+
+      <div class="panel">
+        <div class="barra-filtros">
+          <select id="filtro-anio"><option value="todos">Año: todos</option></select>
+          <select id="filtro-mes"><option value="todos">Mes: todos</option></select>
+          <select id="filtro-dia"><option value="todos">Día: todos</option></select>
+          <input type="search" id="filtro-texto" placeholder="Buscar por nombre de archivo o carpeta…">
+        </div>
+
+        <div id="contenedor-documentos">
+          <table class="tabla-documentos oculto" id="tabla-documentos">
+            <thead>
+              <tr><th>Archivo</th><th>Carpeta</th><th>Fecha</th><th>Hora</th><th>Tipo</th></tr>
+            </thead>
+            <tbody id="cuerpo-documentos"></tbody>
+          </table>
+          <div class="estado-vacio" id="documentos-vacio">Cargando documentos…</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ---------- SECCIÓN: ESCÁNER ---------- -->
+    <div class="seccion oculto" id="seccion-escaner">
+      <div class="encabezado-seccion">
+        <h2>Escáner</h2>
+        <p>En celular usa la cámara del dispositivo. En computador, conecta tu escáner o cámara documental.</p>
+      </div>
+
+      <div class="panel">
+        <div class="acciones-fila" style="margin-top:0;">
+          <button class="btn-secundario" id="btn-abrir-camara">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7l1.5-3h5L16 7"/><circle cx="12" cy="13.5" r="3.2"/></svg>
+            Activar cámara / escáner
+          </button>
+          <button class="btn-secundario" id="btn-escaner-archivo">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="3" width="16" height="18" rx="2"/></svg>
+            Cargar desde software del escáner
+          </button>
+          <input type="file" id="input-escaner-archivo" accept="image/*,application/pdf" multiple class="oculto">
+        </div>
+        <p class="hint" style="margin-top:14px;">
+          Nota sobre escáneres de PC: los navegadores no pueden controlar directamente un escáner TWAIN/WIA.
+          Si tu equipo tiene un escáner conectado, "Activar cámara" intentará listarlo como dispositivo de video
+          (funciona con escáneres de documentos tipo cámara/UVC). Si tu escáner solo funciona con su programa
+          de escritorio, escanea allí y usa "Cargar desde software del escáner" para subir el resultado.
+        </p>
+      </div>
+    </div>
+
+  </main>
+</section>
+
+<!-- =====================================================================================
+     MODAL: CÁMARA / ESCÁNER
+===================================================================================== -->
+<div class="modal-fondo oculto" id="modal-camara">
+  <div class="modal-caja">
+    <h3>Capturar documento</h3>
+    <p id="modal-camara-texto">Selecciona el dispositivo de captura y toma la foto.</p>
+
+    <select id="select-camara" style="width:100%;margin-bottom:12px;padding:9px;background:var(--surface);border:1px solid var(--border);border-radius:8px;"></select>
+
+    <video id="video-escaner" autoplay playsinline></video>
+    <div class="miniaturas-captura" id="miniaturas-captura"></div>
+
+    <div class="modal-opciones">
+      <button class="btn-primario" id="btn-tomar-foto" style="width:auto;">Tomar foto</button>
+      <button class="btn-secundario" id="btn-terminar-captura">Terminar captura</button>
+      <button class="btn-secundario" id="btn-cerrar-camara">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-fondo oculto" id="modal-formato">
+  <div class="modal-caja">
+    <h3>¿Cómo quieres guardarlo?</h3>
+    <p>Elige el formato final del documento capturado.</p>
+    <div class="modal-opciones">
+      <button class="btn-primario" id="btn-formato-jpg" style="width:auto;">JPG</button>
+      <button class="btn-primario" id="btn-formato-pdf" style="width:auto;">PDF</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-fondo oculto" id="modal-paginas">
+  <div class="modal-caja">
+    <h3>¿Una página o varias?</h3>
+    <p>Si eliges varias, podrás seguir tomando fotos antes de generar el PDF.</p>
+    <div class="modal-opciones">
+      <button class="btn-primario" id="btn-una-pagina" style="width:auto;">Una sola página</button>
+      <button class="btn-primario" id="btn-varias-paginas" style="width:auto;">Varias páginas</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script src="app.js"></script>
+</body>
+</html>
