@@ -6,7 +6,7 @@
 // =========================================================================================
 // 0. CONFIGURACIÓN — PEGA AQUÍ LA URL DE TU WEB APP DE APPS SCRIPT (termina en /exec)
 // =========================================================================================
-const URL_BACKEND = 'https://script.google.com/macros/s/AKfycbylGeZOzFB8PuaVHPS-eJat49vxwIM3kgUkWhORqpZsxcfciOh1xmAOXlEySkYtJaa2/exec';
+const URL_BACKEND ='https://script.google.com/macros/s/AKfycbylGeZOzFB8PuaVHPS-eJat49vxwIM3kgUkWhORqpZsxcfciOh1xmAOXlEySkYtJaa2/exec'
 
 // Claves usadas en localStorage
 const LS = {
