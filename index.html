@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Archivo Personal — COMPUKELC</title>
+<title>Archivo Personal — compukelc</title>
 
 <!-- PWA -->
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0B0F17">
-<link rel="apple-touch-icon" href="logo.png">
+<link rel="apple-touch-icon" href="logo (1).jpg">
 
 <link rel="stylesheet" href="styles.css">
 
@@ -26,11 +26,10 @@
   <div class="login-glow"></div>
   <form class="tarjeta-login" id="form-login" autocomplete="off">
     <div class="login-logo-wrap">
-      <!-- CAMBIA AQUÍ: reemplaza logo.png por el archivo de tu logo exportado desde Drive -->
-      <img src="logo.png" alt="Logo COMPUKELC" onerror="this.style.display='none'">
+      <img src="logo (1).jpg" alt="Logo compukelc" onerror="this.style.display='none'">
     </div>
     <h1>Archivo Personal</h1>
-    <p class="subtitulo">COMPUKELC · acceso privado</p>
+    <p class="subtitulo">compukelc · acceso privado</p>
 
     <div id="login-error" class="mensaje-error oculto"></div>
 
@@ -65,8 +64,8 @@
 
   <aside class="sidebar">
     <div class="sidebar-marca">
-      <img src="logo.png" alt="Logo" onerror="this.style.display='none'">
-      <span>COMPUKELC</span>
+      <img src="logo (1).jpg" alt="Logo" onerror="this.style.display='none'">
+      <span>compukelc</span>
     </div>
 
     <button class="nav-item activo" data-vista="subir">
@@ -114,7 +113,7 @@
         <div class="lista-archivos" id="lista-archivos"></div>
 
         <div class="campo-carpeta">
-          <label for="input-carpeta">Carpeta de destino</label>
+          <label for="input-carpeta" style="display:block; margin-bottom:8px; font-size:12px; font-weight:600; color:var(--text-muted); text-transform:uppercase;">Carpeta de destino</label>
           <input type="text" id="input-carpeta" list="lista-carpetas" placeholder="Escribe o elige una carpeta…" autocomplete="off">
           <datalist id="lista-carpetas"></datalist>
         </div>
@@ -193,7 +192,7 @@
     <h3>Capturar documento</h3>
     <p id="modal-camara-texto">Selecciona el dispositivo de captura y toma la foto.</p>
 
-    <select id="select-camara" style="width:100%;margin-bottom:12px;padding:9px;background:var(--surface);border:1px solid var(--border);border-radius:8px;"></select>
+    <select id="select-camara"></select>
 
     <video id="video-escaner" autoplay playsinline></video>
     <div class="miniaturas-captura" id="miniaturas-captura"></div>
@@ -222,8 +221,8 @@
     <h3>¿Una página o varias?</h3>
     <p>Si eliges varias, podrás seguir tomando fotos antes de generar el PDF.</p>
     <div class="modal-opciones">
-      <button class="btn-primario" id="btn-una-pagina" style="width:auto;">Una sola página</button>
-      <button class="btn-primario" id="btn-varias-paginas" style="width:auto;">Varias páginas</button>
+      <button class="btn-primario" id="btn-una-pagina" style="width:auto;">Una página por archivo</button>
+      <button class="btn-primario" id="btn-varias-paginas" style="width:auto;">Dos o más páginas por archivo</button>
     </div>
   </div>
 </div>
