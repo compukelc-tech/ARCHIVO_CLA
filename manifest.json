@@ -1,6 +1,6 @@
 {
-  "name": "Archivo Personal — COMPUKELC",
-  "short_name": "Archivo COMPUKELC",
+  "name": "Archivo Personal — compukelc",
+  "short_name": "Archivo compukelc",
   "description": "Sistema de archivo personal: sube, organiza y consulta tus documentos desde cualquier equipo.",
   "start_url": "./index.html",
   "scope": "./",
