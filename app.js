@@ -2,7 +2,7 @@
 // SISTEMA DE ARCHIVO PERSONAL — compukelc
 // ARCHIVO COMPLETO: app.js (Incluye Auto-Login y Módulo Escáner)
 // =========================================================================================
-const SCRIPT_URL = 'TU_URL_DE_APPS_SCRIPT_AQUI'; // <-- Pega aquí tu URL (termina en /exec)
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbylGeZOzFB8PuaVHPS-eJat49vxwIM3kgUkWhORqpZsxcfciOh1xmAOXlEySkYtJaa2/exec'; // <-- Pega aquí tu URL (termina en /exec)
 let tokenSesion = localStorage.getItem('compukelc_token') || null;
 
 // Variables globales
