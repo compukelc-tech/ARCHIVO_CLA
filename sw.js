@@ -1,18 +1,11 @@
-// =========================================================================================
-// SERVICE WORKER — Archivo Personal COMPUKELC
-// Cachea el "app shell" (HTML/CSS/JS/logo) para que la app abra e instale sin conexión.
-// Las peticiones al backend de Apps Script SIEMPRE van a la red (nunca se cachean),
-// para que subir archivos y consultar el registro siempre traigan datos actuales.
-// =========================================================================================
-
-const CACHE_NAME = 'archivo-personal-shell-v1';
+const CACHE_NAME = 'archivo-personal-shell-v2';
 const ARCHIVOS_SHELL = [
   './',
   './index.html',
   './styles.css',
   './app.js',
   './manifest.json',
-  './logo.png'
+  './logo.jpg'
 ];
 
 self.addEventListener('install', function (evento) {
@@ -40,9 +33,8 @@ self.addEventListener('activate', function (evento) {
 self.addEventListener('fetch', function (evento) {
   const url = evento.request.url;
 
-  // Nunca cachear llamadas al backend de Apps Script (google.com / script.google.com)
   if (url.indexOf('script.google.com') !== -1 || url.indexOf('googleapis.com') !== -1) {
-    return; // deja que vaya directo a la red
+    return; 
   }
 
   evento.respondWith(
