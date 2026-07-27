@@ -13,7 +13,7 @@ const GOOGLE_APP_URL = 'https://script.google.com/macros/s/AKfycbylGeZOzFB8PuaVH
 document.addEventListener('DOMContentLoaded', () => {
   configurarEventosLogin();
   configurarEventosNavegacion();
-  configurarEventosSubida(); // Nuevo módulo activado
+  configurarEventosSubida(); 
   configurarEventosEscaner();
   
   // Si ya hay sesión al recargar la página, cargar carpetas
@@ -85,7 +85,7 @@ function configurarEventosLogin() {
           document.getElementById('chip-nombre').textContent = datos.usuario.nombre || datos.usuario.usuario;
           document.getElementById('chip-cargo').textContent = datos.usuario.cargo || datos.usuario.rol;
           
-          cargarCarpetas(datos.token); // Cargar opciones de destino
+          cargarCarpetas(datos.token); 
         } else {
           errorDiv.textContent = datos.error || 'Error de credenciales';
           errorDiv.classList.remove('oculto');
@@ -139,7 +139,7 @@ function mostrarToast(mensaje, tipo) {
 }
 
 // =========================================================================================
-// MÓDULO SUBIDA DE ARCHIVOS (Nuevo y Corregido)
+// MÓDULO SUBIDA DE ARCHIVOS
 // =========================================================================================
 function configurarEventosSubida() {
   const dropzone = document.getElementById('dropzone');
@@ -165,7 +165,7 @@ function configurarEventosSubida() {
 
   inputArchivos.addEventListener('change', (e) => {
     if (e.target.files.length) procesarArchivosSeleccionados(e.target.files);
-    inputArchivos.value = ''; // Limpiar input para permitir seleccionar el mismo archivo después
+    inputArchivos.value = ''; 
   });
 
   btnSubir.addEventListener('click', subirArchivosADrive);
@@ -483,3 +483,37 @@ function finalizarFlujoEscaneo() {
   renderizarListaArchivos();
   mostrarToast('Documento escaneado listo para subir.', 'exito');
 }
+
+// =========================================================================================
+// MÓDULO PWA — INSTALACIÓN
+// =========================================================================================
+let eventoInstalacion;
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  // Prevenir que Chrome muestre el cartel automáticamente
+  e.preventDefault();
+  // Guardar el evento para poder dispararlo luego
+  eventoInstalacion = e;
+  
+  // Mostrar el botón de instalación en la interfaz
+  const btnInstalar = document.getElementById('btn-instalar-pwa');
+  if (btnInstalar) {
+    btnInstalar.classList.remove('oculto');
+    
+    // Configurar el click para instalar
+    btnInstalar.addEventListener('click', async () => {
+      // Mostrar el prompt nativo de instalación
+      eventoInstalacion.prompt();
+      
+      // Esperar la respuesta del usuario
+      const { outcome } = await eventoInstalacion.userChoice;
+      if (outcome === 'accepted') {
+        console.log('El usuario instaló la aplicación');
+        btnInstalar.classList.add('oculto'); // Ocultar el botón ya que se instaló
+      }
+      
+      // Limpiar el evento
+      eventoInstalacion = null;
+    });
+  }
+});
