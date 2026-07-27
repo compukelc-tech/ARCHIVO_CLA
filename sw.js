@@ -1,13 +1,13 @@
-const CACHE_NAME = 'archivo-personal-shell-v3'; // Versión actualizada
+const CACHE_NAME = 'archivo-personal-shell-v4';
 const ARCHIVOS_SHELL = [
   './',
-  './index.html',
-  './styles.css',
-  './app.js',
-  './manifest.json',
-  './logo.jpg',
-  './logo-192.png',
-  './logo-512.png'
+  'index.html',
+  'styles.css',
+  'app.js',
+  'manifest.json',
+  'logo.jpg',
+  'logo-192.png',
+  'logo-512.png'
 ];
 
 self.addEventListener('install', function (evento) {
@@ -35,6 +35,7 @@ self.addEventListener('activate', function (evento) {
 self.addEventListener('fetch', function (evento) {
   const url = evento.request.url;
 
+  // No interceptar las llamadas al servidor de Google
   if (url.indexOf('script.google.com') !== -1 || url.indexOf('googleapis.com') !== -1) {
     return; 
   }
