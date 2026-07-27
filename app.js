@@ -1,7 +1,7 @@
 // =========================================================================================
 // MÓDULO 1: CONFIGURACIÓN, LOGIN Y NAVEGACIÓN
 // =========================================================================================
-const SCRIPT_URL = 'TU_URL_DE_APPS_SCRIPT_AQUI'; // <-- IMPORTANTE: Pega aquí la nueva URL de tu script
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbylGeZOzFB8PuaVHPS-eJat49vxwIM3kgUkWhORqpZsxcfciOh1xmAOXlEySkYtJaa2/exec'; // <-- IMPORTANTE: Pega aquí la nueva URL de tu script
 let tokenSesion = localStorage.getItem('compukelc_token') || null;
 
 // Variables globales para la vista de la app
