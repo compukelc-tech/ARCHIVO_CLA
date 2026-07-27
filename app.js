@@ -1,6 +1,6 @@
 // =========================================================================================
 // SISTEMA DE ARCHIVO PERSONAL — compukelc
-// ARCHIVO COMPLETO: app.js (Incluye Auto-Login y Módulo Escáner)
+// ARCHIVO COMPLETO: app.js
 // =========================================================================================
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbylGeZOzFB8PuaVHPS-eJat49vxwIM3kgUkWhORqpZsxcfciOh1xmAOXlEySkYtJaa2/exec'; // <-- Pega aquí tu URL (termina en /exec)
 let tokenSesion = localStorage.getItem('compukelc_token') || null;
@@ -51,14 +51,13 @@ document.addEventListener('DOMContentLoaded', () => {
     .then(res => res.json())
     .then(data => {
       if (data.ok) {
-        // Token válido, saltar al dashboard
         $('#vista-login').classList.add('oculto');
         $('#vista-app').classList.remove('oculto');
         
         $('#chip-nombre').textContent = localStorage.getItem('usuario_nombre') || data.usuario;
         $('#chip-cargo').textContent = localStorage.getItem('usuario_cargo') || 'Usuario';
         
-        cargarDocumentos(); // Cargar los documentos automáticamente
+        cargarDocumentos();
       } else {
         localStorage.removeItem('compukelc_token');
         tokenSesion = null;
@@ -77,7 +76,6 @@ document.addEventListener('DOMContentLoaded', () => {
   // 2. MÓDULO LOGIN Y NAVEGACIÓN
   // ---------------------------------------------------------------------------------------
   
-  // Visualizar contraseña
   const btnToggleClave = document.getElementById('btn-toggle-clave');
   const inputClave = document.getElementById('input-clave');
   
@@ -87,7 +85,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Formulario Login
   const formLogin = document.getElementById('form-login');
   if (formLogin) {
     formLogin.addEventListener('submit', async function(e) {
@@ -119,12 +116,10 @@ document.addEventListener('DOMContentLoaded', () => {
           
           tokenSesion = resultado.token;
           
-          // Guardar siempre el token y los datos de interfaz para el F5
           localStorage.setItem('compukelc_token', tokenSesion);
           localStorage.setItem('usuario_nombre', resultado.usuario.nombre);
           localStorage.setItem('usuario_cargo', resultado.usuario.cargo);
           
-          // Recordar usuario en el input si está marcado
           if ($('#input-recordar').checked) {
             localStorage.setItem('usuario_guardado', usuario);
           } else {
@@ -144,14 +139,12 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Autocompletado de usuario guardado
   const usuarioGuardado = localStorage.getItem('usuario_guardado');
   if (usuarioGuardado) {
     $('#input-usuario').value = usuarioGuardado;
     $('#input-recordar').checked = true;
   }
   
-  // Navegación Lateral
   document.querySelectorAll('.nav-item').forEach(btn => {
     btn.addEventListener('click', () => {
       const vista = btn.dataset.vista;
@@ -163,7 +156,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // Cerrar Sesión
   const btnLogout = $('#btn-logout');
   if (btnLogout) {
     btnLogout.addEventListener('click', () => {
@@ -177,11 +169,9 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Inicializar sub-módulos
   configurarEventosEscaner();
   configurarEventosSubida();
   
-  // Listeners de Filtros de Documentos
   $('#filtro-anio')?.addEventListener('change', cargarDocumentos);
   $('#filtro-mes')?.addEventListener('change', cargarDocumentos);
   $('#filtro-dia')?.addEventListener('change', cargarDocumentos);
@@ -240,7 +230,10 @@ async function cargarDocumentos() {
             <td>${reg.carpetaDestino}</td>
             <td class="fecha-mono">${reg.fecha}</td>
             <td class="fecha-mono">${reg.hora}</td>
-            <td><span class="estado listo">${reg.tipo}</span></td>
+            <td style="display: flex; justify-content: space-between; align-items: center;">
+              <span class="estado listo">${reg.tipo}</span>
+              <button class="btn-quitar" onclick="eliminarDocumento('${reg.url}')" title="Eliminar archivo" style="background: none; border: none; cursor: pointer; color: var(--danger); font-size: 16px;">🗑️</button>
+            </td>
           `;
           tbody.appendChild(tr);
         });
@@ -269,6 +262,38 @@ function actualizarFiltros(disponibles) {
   if (selectDia.options.length <= 1) disponibles.dias.forEach(d => selectDia.add(new Option(d, d)));
 }
 
+window.eliminarDocumento = async function(urlArchivo) {
+  if (!confirm("¿Estás seguro de que deseas eliminar este archivo? Se borrará permanentemente de tu base de datos y de Google Drive.")) return;
+  
+  const vacio = $('#documentos-vacio');
+  vacio.textContent = 'Eliminando archivo...';
+  vacio.classList.remove('oculto');
+  $('#tabla-documentos').classList.add('oculto');
+
+  try {
+    const respuesta = await fetch(SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({
+        action: 'eliminarArchivo',
+        token: tokenSesion,
+        urlArchivo: urlArchivo
+      })
+    });
+    
+    const resultado = await respuesta.json();
+    
+    if (resultado.ok) {
+      mostrarToast('Archivo eliminado correctamente', 'exito');
+      cargarDocumentos(); 
+    } else {
+      mostrarToast('Error al eliminar: ' + resultado.error, 'error');
+      cargarDocumentos(); 
+    }
+  } catch (error) {
+    mostrarToast('Fallo de conexión al intentar eliminar', 'error');
+    cargarDocumentos();
+  }
+};
 
 // ---------------------------------------------------------------------------------------
 // 4. MÓDULO DE SUBIDA DE ARCHIVOS
