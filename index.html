@@ -8,7 +8,7 @@
 <!-- PWA -->
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0B0F17">
-<link rel="apple-touch-icon" href="logo (1).jpg">
+<link rel="apple-touch-icon" href="logo.jpg">
 
 <link rel="stylesheet" href="styles.css">
 
@@ -26,7 +26,7 @@
   <div class="login-glow"></div>
   <form class="tarjeta-login" id="form-login" autocomplete="off">
     <div class="login-logo-wrap">
-      <img src="logo (1).jpg" alt="Logo compukelc" onerror="this.style.display='none'">
+      <img src="logo.jpg" alt="Logo compukelc" onerror="this.style.display='none'">
     </div>
     <h1>Archivo Personal</h1>
     <p class="subtitulo">compukelc · acceso privado</p>
@@ -64,7 +64,7 @@
 
   <aside class="sidebar">
     <div class="sidebar-marca">
-      <img src="logo (1).jpg" alt="Logo" onerror="this.style.display='none'">
+      <img src="logo.jpg" alt="Logo" onerror="this.style.display='none'">
       <span>compukelc</span>
     </div>
 
@@ -91,7 +91,6 @@
   </aside>
 
   <main class="contenido">
-
     <!-- ---------- SECCIÓN: SUBIR ARCHIVOS ---------- -->
     <div class="seccion" id="seccion-subir">
       <div class="encabezado-seccion">
@@ -128,9 +127,8 @@
     <div class="seccion oculto" id="seccion-documentos">
       <div class="encabezado-seccion">
         <h2>Documentos</h2>
-        <p>Filtra por fecha o busca por nombre — sin importar mayúsculas, tildes u ortografía exacta.</p>
+        <p>Filtra por fecha o busca por nombre.</p>
       </div>
-
       <div class="panel">
         <div class="barra-filtros">
           <select id="filtro-anio"><option value="todos">Año: todos</option></select>
@@ -138,7 +136,6 @@
           <select id="filtro-dia"><option value="todos">Día: todos</option></select>
           <input type="search" id="filtro-texto" placeholder="Buscar por nombre de archivo o carpeta…">
         </div>
-
         <div id="contenedor-documentos">
           <div class="tabla-documentos-wrap">
             <table class="tabla-documentos oculto" id="tabla-documentos">
@@ -157,7 +154,7 @@
     <div class="seccion oculto" id="seccion-escaner">
       <div class="encabezado-seccion">
         <h2>Escáner</h2>
-        <p>En celular usa la cámara del dispositivo. En computador, conecta tu escáner o cámara documental.</p>
+        <p>En celular usa la cámara del dispositivo. En PC, conecta tu escáner o cámara documental.</p>
       </div>
 
       <div class="panel">
@@ -172,15 +169,8 @@
           </button>
           <input type="file" id="input-escaner-archivo" accept="image/*,application/pdf" multiple class="oculto">
         </div>
-        <p class="hint" style="margin-top:14px;">
-          Nota sobre escáneres de PC: los navegadores no pueden controlar directamente un escáner TWAIN/WIA.
-          Si tu equipo tiene un escáner conectado, "Activar cámara" intentará listarlo como dispositivo de video
-          (funciona con escáneres de documentos tipo cámara/UVC). Si tu escáner solo funciona con su programa
-          de escritorio, escanea allí y usa "Cargar desde software del escáner" para subir el resultado.
-        </p>
       </div>
     </div>
-
   </main>
 </section>
 
@@ -191,12 +181,9 @@
   <div class="modal-caja">
     <h3>Capturar documento</h3>
     <p id="modal-camara-texto">Selecciona el dispositivo de captura y toma la foto.</p>
-
     <select id="select-camara"></select>
-
     <video id="video-escaner" autoplay playsinline></video>
     <div class="miniaturas-captura" id="miniaturas-captura"></div>
-
     <div class="modal-opciones">
       <button class="btn-primario" id="btn-tomar-foto" style="width:auto;">Tomar foto</button>
       <button class="btn-secundario" id="btn-terminar-captura">Terminar captura</button>
