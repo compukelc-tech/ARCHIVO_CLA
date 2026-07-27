@@ -1,11 +1,13 @@
-const CACHE_NAME = 'archivo-personal-shell-v2';
+const CACHE_NAME = 'archivo-personal-shell-v3'; // Versión actualizada
 const ARCHIVOS_SHELL = [
   './',
   './index.html',
   './styles.css',
   './app.js',
   './manifest.json',
-  './logo.jpg'
+  './logo.jpg',
+  './logo-192.png',
+  './logo-512.png'
 ];
 
 self.addEventListener('install', function (evento) {
