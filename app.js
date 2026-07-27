@@ -1,16 +1,17 @@
 // =========================================================================================
-// MÓDULO 1: CONFIGURACIÓN, LOGIN Y NAVEGACIÓN
+// SISTEMA DE ARCHIVO PERSONAL — compukelc
+// ARCHIVO COMPLETO: app.js
 // =========================================================================================
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbylGeZOzFB8PuaVHPS-eJat49vxwIM3kgUkWhORqpZsxcfciOh1xmAOXlEySkYtJaa2/exec'; // <-- IMPORTANTE: Pega aquí la nueva URL de tu script
+const SCRIPT_URL = 'TU_URL_DE_APPS_SCRIPT_AQUI'; // <-- Pega aquí tu URL (termina en /exec)
 let tokenSesion = localStorage.getItem('compukelc_token') || null;
 
-// Variables globales para la vista de la app
+// Variables globales
 let capturasEscaner = [];
 let streamCamaraActual = null;
 let formatoElegido = 'pdf';
 let archivosEnCola = [];
 
-// Funciones utilitarias para el DOM
+// Utilidades DOM
 const $ = (selector) => document.querySelector(selector);
 const mostrarToast = (mensaje, tipo = 'exito') => {
   const toast = $('#toast');
@@ -33,7 +34,11 @@ const cambiarVista = (vistaId) => {
 
 document.addEventListener('DOMContentLoaded', () => {
   
-  // 1. SOLUCIÓN: Botón de visibilidad de contraseña
+  // ---------------------------------------------------------------------------------------
+  // 1. MÓDULO LOGIN Y NAVEGACIÓN
+  // ---------------------------------------------------------------------------------------
+  
+  // Visualizar contraseña
   const btnToggleClave = document.getElementById('btn-toggle-clave');
   const inputClave = document.getElementById('input-clave');
   
@@ -43,7 +48,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // 2. Lógica de formulario de Login
+  // Formulario Login
   const formLogin = document.getElementById('form-login');
   if (formLogin) {
     formLogin.addEventListener('submit', async function(e) {
@@ -67,16 +72,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const resultado = await respuesta.json();
         
         if (resultado.ok) {
-          // Cambiar de vista
-          document.getElementById('vista-login').classList.add('oculto');
-          document.getElementById('vista-app').classList.remove('oculto');
+          $('#vista-login').classList.add('oculto');
+          $('#vista-app').classList.remove('oculto');
           
-          document.getElementById('chip-nombre').textContent = resultado.usuario.nombre;
-          document.getElementById('chip-cargo').textContent = resultado.usuario.cargo;
+          $('#chip-nombre').textContent = resultado.usuario.nombre;
+          $('#chip-cargo').textContent = resultado.usuario.cargo;
           
           tokenSesion = resultado.token;
           
-          if (document.getElementById('input-recordar').checked) {
+          if ($('#input-recordar').checked) {
             localStorage.setItem('usuario_guardado', usuario);
             localStorage.setItem('compukelc_token', tokenSesion);
           } else {
@@ -97,79 +101,301 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Autocompletado de usuario
+  // Autocompletado
   const usuarioGuardado = localStorage.getItem('usuario_guardado');
   if (usuarioGuardado) {
-    document.getElementById('input-usuario').value = usuarioGuardado;
-    document.getElementById('input-recordar').checked = true;
+    $('#input-usuario').value = usuarioGuardado;
+    $('#input-recordar').checked = true;
   }
   
-  // 3. Sistema de Navegación Lateral (Sidebar)
+  // Navegación Lateral
   document.querySelectorAll('.nav-item').forEach(btn => {
     btn.addEventListener('click', () => {
       const vista = btn.dataset.vista;
-      if (vista) cambiarVista(vista);
+      if (vista) {
+        cambiarVista(vista);
+        if (vista === 'documentos') cargarDocumentos();
+        if (vista === 'subir') cargarCarpetas();
+      }
     });
   });
 
-  // Cierre de Sesión
-  const btnLogout = document.getElementById('btn-logout');
+  // Cerrar Sesión
+  const btnLogout = $('#btn-logout');
   if (btnLogout) {
     btnLogout.addEventListener('click', () => {
       localStorage.removeItem('compukelc_token');
       tokenSesion = null;
-      document.getElementById('vista-app').classList.add('oculto');
-      document.getElementById('vista-login').classList.remove('oculto');
-      document.getElementById('input-clave').value = '';
+      $('#vista-app').classList.add('oculto');
+      $('#vista-login').classList.remove('oculto');
+      $('#input-clave').value = '';
     });
   }
 
-  // Inicializar Escáner
-  if (typeof configurarEventosEscaner === 'function') {
-    configurarEventosEscaner();
-  }
+  // Inicializar sub-módulos
+  configurarEventosEscaner();
+  configurarEventosSubida();
+  
+  // Listeners de Filtros de Documentos
+  $('#filtro-anio')?.addEventListener('change', cargarDocumentos);
+  $('#filtro-mes')?.addEventListener('change', cargarDocumentos);
+  $('#filtro-dia')?.addEventListener('change', cargarDocumentos);
+  
+  $('#filtro-texto')?.addEventListener('input', function(e) {
+    const texto = e.target.value.toLowerCase().trim();
+    const filas = document.querySelectorAll('#cuerpo-documentos tr');
+    filas.forEach(fila => {
+      const nombre = fila.cells[0].textContent.toLowerCase();
+      const carpeta = fila.cells[1].textContent.toLowerCase();
+      fila.style.display = (nombre.includes(texto) || carpeta.includes(texto)) ? '' : 'none';
+    });
+  });
 });
 
+// ---------------------------------------------------------------------------------------
+// 2. MÓDULO DE DOCUMENTOS (TABLA)
+// ---------------------------------------------------------------------------------------
 
-// =========================================================================================
-// MÓDULO 2: ESCÁNER — cámara (móvil/webcam de PC) + generación de PDF multipágina
-// =========================================================================================
-function configurarEventosEscaner() {
-  const btnAbrirCam = $('#btn-abrir-camara');
-  if(btnAbrirCam) btnAbrirCam.addEventListener('click', abrirModalCamara);
-  
-  const btnCerrarCam = $('#btn-cerrar-camara');
-  if(btnCerrarCam) btnCerrarCam.addEventListener('click', cerrarModalCamara);
-  
-  const btnTomarFoto = $('#btn-tomar-foto');
-  if(btnTomarFoto) btnTomarFoto.addEventListener('click', tomarFotoDesdeCamara);
-  
-  const btnTerminarCaptura = $('#btn-terminar-captura');
-  if(btnTerminarCaptura) btnTerminarCaptura.addEventListener('click', terminarCaptura);
+async function cargarDocumentos() {
+  const tbody = $('#cuerpo-documentos');
+  const vacio = $('#documentos-vacio');
+  const tabla = $('#tabla-documentos');
 
-  const btnEscanerAr = $('#btn-escaner-archivo');
-  if(btnEscanerAr) btnEscanerAr.addEventListener('click', () => $('#input-escaner-archivo').click());
-  
-  const inputEscaner = $('#input-escaner-archivo');
-  if (inputEscaner) {
-    inputEscaner.addEventListener('change', (e) => {
-      if(typeof agregarArchivos === 'function') agregarArchivos(Array.from(e.target.files));
-      cambiarVista('subir');
-      mostrarToast('Archivo(s) del escáner agregados. Elige carpeta y sube.', 'exito');
+  if (!tokenSesion) return;
+
+  vacio.textContent = 'Cargando documentos...';
+  vacio.classList.remove('oculto');
+  tabla.classList.add('oculto');
+  tbody.innerHTML = '';
+
+  try {
+    const respuesta = await fetch(SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({
+        action: 'obtenerRegistro',
+        token: tokenSesion,
+        filtros: {
+          anio: $('#filtro-anio').value,
+          mes: $('#filtro-mes').value,
+          dia: $('#filtro-dia').value
+        }
+      })
     });
+
+    const resultado = await respuesta.json();
+
+    if (resultado.ok) {
+      if (resultado.registros.length === 0) {
+        vacio.textContent = 'No hay documentos registrados o que coincidan con los filtros.';
+      } else {
+        resultado.registros.reverse().forEach(reg => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td><a href="${reg.url}" target="_blank" rel="noopener noreferrer">${reg.nombreArchivo}</a></td>
+            <td>${reg.carpetaDestino}</td>
+            <td class="fecha-mono">${reg.fecha}</td>
+            <td class="fecha-mono">${reg.hora}</td>
+            <td><span class="estado listo">${reg.tipo}</span></td>
+          `;
+          tbody.appendChild(tr);
+        });
+        vacio.classList.add('oculto');
+        tabla.classList.remove('oculto');
+      }
+      actualizarFiltros(resultado.disponibles);
+    } else {
+      vacio.textContent = 'Error: ' + resultado.error;
+      if (resultado.error.includes('expirada') || resultado.error.includes('Token')) {
+        $('#btn-logout').click();
+      }
+    }
+  } catch (error) {
+    vacio.textContent = 'Error de conexión al cargar los documentos.';
+  }
+}
+
+function actualizarFiltros(disponibles) {
+  const selectAnio = $('#filtro-anio');
+  const selectMes = $('#filtro-mes');
+  const selectDia = $('#filtro-dia');
+
+  if (selectAnio.options.length <= 1) disponibles.anios.forEach(a => selectAnio.add(new Option(a, a)));
+  if (selectMes.options.length <= 1) disponibles.meses.forEach(m => selectMes.add(new Option(m, m)));
+  if (selectDia.options.length <= 1) disponibles.dias.forEach(d => selectDia.add(new Option(d, d)));
+}
+
+
+// ---------------------------------------------------------------------------------------
+// 3. MÓDULO DE SUBIDA DE ARCHIVOS
+// ---------------------------------------------------------------------------------------
+
+function configurarEventosSubida() {
+  const dropzone = $('#dropzone');
+  const inputArchivos = $('#input-archivos');
+  const btnSubir = $('#btn-subir');
+  
+  if(!dropzone) return;
+
+  dropzone.addEventListener('click', () => inputArchivos.click());
+  
+  dropzone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropzone.classList.add('arrastrando');
+  });
+  
+  dropzone.addEventListener('dragleave', () => dropzone.classList.remove('arrastrando'));
+  
+  dropzone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropzone.classList.remove('arrastrando');
+    procesarArchivosSeleccionados(e.dataTransfer.files);
+  });
+
+  inputArchivos.addEventListener('change', (e) => procesarArchivosSeleccionados(e.target.files));
+  
+  btnSubir.addEventListener('click', subirArchivosADrive);
+}
+
+async function cargarCarpetas() {
+  if (!tokenSesion) return;
+  try {
+    const res = await fetch(SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'listarCarpetas', token: tokenSesion })
+    });
+    const data = await res.json();
+    if (data.ok) {
+      const datalist = $('#lista-carpetas');
+      datalist.innerHTML = '';
+      data.carpetas.forEach(c => {
+        const option = document.createElement('option');
+        option.value = c;
+        datalist.appendChild(option);
+      });
+    }
+  } catch (e) {
+    console.error("Error al cargar carpetas", e);
+  }
+}
+
+function procesarArchivosSeleccionados(files) {
+  Array.from(files).forEach(file => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const base64 = e.target.result.split(',')[1];
+      archivosEnCola.push({
+        id: 'file_' + Date.now() + Math.random(),
+        nombre: file.name,
+        mime: file.type,
+        base64: base64,
+        peso: file.size,
+        estado: 'pendiente'
+      });
+      renderizarListaArchivos();
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function renderizarListaArchivos() {
+  const lista = $('#lista-archivos');
+  lista.innerHTML = '';
+  
+  archivosEnCola.forEach(arch => {
+    const div = document.createElement('div');
+    div.className = 'item-archivo';
+    div.innerHTML = `
+      <span class="nombre">${arch.nombre}</span>
+      <span class="peso">${(arch.peso / 1024).toFixed(1)} KB</span>
+      <span class="estado ${arch.estado}" id="estado-${arch.id}">${arch.estado}</span>
+      <button class="btn-quitar" onclick="quitarArchivo('${arch.id}')">✕</button>
+    `;
+    lista.appendChild(div);
+  });
+  
+  $('#btn-subir').disabled = archivosEnCola.length === 0;
+}
+
+window.quitarArchivo = function(id) {
+  archivosEnCola = archivosEnCola.filter(a => a.id !== id);
+  renderizarListaArchivos();
+}
+
+async function subirArchivosADrive() {
+  const carpetaDestino = $('#input-carpeta').value.trim();
+  if (!carpetaDestino) {
+    mostrarToast('Debes indicar una carpeta de destino.', 'error');
+    return;
   }
 
-  const btnJpg = $('#btn-formato-jpg');
-  if(btnJpg) btnJpg.addEventListener('click', () => elegirFormato('jpg'));
+  $('#btn-subir').disabled = true;
+
+  for (let arch of archivosEnCola) {
+    if (arch.estado === 'listo') continue;
+    
+    document.getElementById(`estado-${arch.id}`).textContent = 'subiendo...';
+    document.getElementById(`estado-${arch.id}`).className = 'estado subiendo';
+    
+    try {
+      const res = await fetch(SCRIPT_URL, {
+        method: 'POST',
+        body: JSON.stringify({
+          action: 'subirArchivo',
+          token: tokenSesion,
+          nombreArchivo: arch.nombre,
+          carpetaDestino: carpetaDestino,
+          base64Data: arch.base64,
+          tipoMime: arch.mime,
+          tipoOrigen: 'Subida manual'
+        })
+      });
+      
+      const data = await res.json();
+      if (data.ok) {
+        arch.estado = 'listo';
+        document.getElementById(`estado-${arch.id}`).textContent = 'listo';
+        document.getElementById(`estado-${arch.id}`).className = 'estado listo';
+      } else {
+        throw new Error(data.error);
+      }
+    } catch (err) {
+      arch.estado = 'error';
+      document.getElementById(`estado-${arch.id}`).textContent = 'error';
+      document.getElementById(`estado-${arch.id}`).className = 'estado error';
+      mostrarToast('Error al subir: ' + arch.nombre, 'error');
+    }
+  }
   
-  const btnPdf = $('#btn-formato-pdf');
-  if(btnPdf) btnPdf.addEventListener('click', () => elegirFormato('pdf'));
-  
-  const btnUnaPag = $('#btn-una-pagina');
-  if(btnUnaPag) btnUnaPag.addEventListener('click', () => finalizarCapturaComoPdf(false));
-  
-  const btnMultiPag = $('#btn-varias-paginas');
-  if(btnMultiPag) btnMultiPag.addEventListener('click', () => finalizarCapturaComoPdf(true));
+  // Limpiar completados después de 2 segundos
+  setTimeout(() => {
+    archivosEnCola = archivosEnCola.filter(a => a.estado !== 'listo');
+    renderizarListaArchivos();
+    $('#input-carpeta').value = '';
+  }, 2000);
+}
+
+
+// ---------------------------------------------------------------------------------------
+// 4. MÓDULO ESCÁNER (CÁMARA Y PDF)
+// ---------------------------------------------------------------------------------------
+
+function configurarEventosEscaner() {
+  $('#btn-abrir-camara')?.addEventListener('click', abrirModalCamara);
+  $('#btn-cerrar-camara')?.addEventListener('click', cerrarModalCamara);
+  $('#btn-tomar-foto')?.addEventListener('click', tomarFotoDesdeCamara);
+  $('#btn-terminar-captura')?.addEventListener('click', terminarCaptura);
+
+  $('#btn-escaner-archivo')?.addEventListener('click', () => $('#input-escaner-archivo').click());
+  $('#input-escaner-archivo')?.addEventListener('change', (e) => {
+    procesarArchivosSeleccionados(e.target.files);
+    cambiarVista('subir');
+    mostrarToast('Archivo(s) del escáner agregados. Elige carpeta y sube.', 'exito');
+  });
+
+  $('#btn-formato-jpg')?.addEventListener('click', () => elegirFormato('jpg'));
+  $('#btn-formato-pdf')?.addEventListener('click', () => elegirFormato('pdf'));
+  $('#btn-una-pagina')?.addEventListener('click', () => finalizarCapturaComoPdf(false));
+  $('#btn-varias-paginas')?.addEventListener('click', () => finalizarCapturaComoPdf(true));
 }
 
 async function abrirModalCamara() {
@@ -203,12 +429,8 @@ async function abrirModalCamara() {
         idCamaraPrincipal = camaras[0].deviceId;
     }
 
-    if (idCamaraPrincipal) {
-        select.value = idCamaraPrincipal;
-    }
-
+    if (idCamaraPrincipal) select.value = idCamaraPrincipal;
     select.addEventListener('change', () => iniciarStreamCamara(select.value));
-
     await iniciarStreamCamara(idCamaraPrincipal);
   } catch (e) {
     mostrarToast('No se pudo acceder a la cámara. Usa "Cargar desde software del escáner".', 'error');
@@ -282,9 +504,9 @@ function guardarCapturasComoJpg() {
   capturasEscaner.forEach((dataUrl, i) => {
     const base64 = dataUrl.split(',')[1];
     archivosEnCola.push({
-      id: 'scan' + Date.now() + i,
+      id: 'scan_' + Date.now() + i,
       nombre: 'escaneo_' + Date.now() + '_' + (i + 1) + '.jpg',
-      base64,
+      base64: base64,
       mime: 'image/jpeg',
       peso: Math.round(base64.length * 0.75),
       estado: 'pendiente'
@@ -310,7 +532,7 @@ function finalizarCapturaComoPdf(variasPaginas) {
 
   const base64Pdf = pdf.output('datauristring').split(',')[1];
   archivosEnCola.push({
-    id: 'scanpdf' + Date.now(),
+    id: 'scanpdf_' + Date.now(),
     nombre: 'escaneo_' + Date.now() + '.pdf',
     base64: base64Pdf,
     mime: 'application/pdf',
@@ -324,11 +546,6 @@ function finalizarCapturaComoPdf(variasPaginas) {
 function finalizarFlujoEscaneo() {
   capturasEscaner = [];
   cambiarVista('subir');
-  if (typeof renderizarListaArchivos === 'function') renderizarListaArchivos();
-  mostrarToast('Documento escaneado agregado. Elige carpeta y sube.', 'exito');
+  renderizarListaArchivos();
+  mostrarToast('Documento escaneado listo para subir.', 'exito');
 }
-
-// -----------------------------------------------------------------------------------------
-// PEGA AQUÍ DEBAJO LAS FUNCIONES RESTANTES DE TU APP (Si tienes módulos de subida/tabla)
-// Ejemplo: agregarArchivos(), renderizarListaArchivos(), etc.
-// -----------------------------------------------------------------------------------------
