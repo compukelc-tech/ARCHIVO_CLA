@@ -5,7 +5,7 @@ let capturasEscaner = [];
 let streamCamaraActual = null;
 let formatoElegido = 'pdf';
 let archivosEnCola = [];
-const GOOGLE_APP_URL = 'https://script.google.com/macros/s/AKfycbylGeZOzFB8PuaVHPS-eJat49vxwIM3kgUkWhORqpZsxcfciOh1xmAOXlEySkYtJaa2/exec'; // <-- REEMPLAZA ESTO POR LA URL DE TU SCRIPT
+const GOOGLE_APP_URL = 'https://script.google.com/macros/s/AKfycbylGeZOzFB8PuaVHPS-eJat49vxwIM3kgUkWhORqpZsxcfciOh1xmAOXlEySkYtJaa2/exec'; 
 
 // =========================================================================================
 // INICIALIZACIÓN
@@ -23,7 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js')
+    navigator.serviceWorker.register('sw.js')
       .then(() => console.log('Service Worker registrado'))
       .catch(err => console.log('Error en Service Worker:', err));
   }
@@ -485,7 +485,7 @@ function finalizarFlujoEscaneo() {
 }
 
 // =========================================================================================
-// MÓDULO PWA — INSTALACIÓN
+// MÓDULO PWA — INSTALACIÓN Y EVENTOS
 // =========================================================================================
 let eventoInstalacion;
 
@@ -502,13 +502,15 @@ window.addEventListener('beforeinstallprompt', (e) => {
     
     // Configurar el click para instalar
     btnInstalar.addEventListener('click', async () => {
+      if (!eventoInstalacion) return;
+      
       // Mostrar el prompt nativo de instalación
       eventoInstalacion.prompt();
       
       // Esperar la respuesta del usuario
       const { outcome } = await eventoInstalacion.userChoice;
       if (outcome === 'accepted') {
-        console.log('El usuario instaló la aplicación');
+        console.log('El usuario instaló la aplicación con éxito');
         btnInstalar.classList.add('oculto'); // Ocultar el botón ya que se instaló
       }
       
@@ -516,4 +518,10 @@ window.addEventListener('beforeinstallprompt', (e) => {
       eventoInstalacion = null;
     });
   }
+});
+
+// Ocultar botón si la app ya fue instalada (y se está abriendo de forma independiente)
+window.addEventListener('appinstalled', () => {
+  const btnInstalar = document.getElementById('btn-instalar-pwa');
+  if (btnInstalar) btnInstalar.classList.add('oculto');
 });
