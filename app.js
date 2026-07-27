@@ -1,6 +1,6 @@
 // =========================================================================================
 // SISTEMA DE ARCHIVO PERSONAL — compukelc
-// ARCHIVO COMPLETO: app.js
+// ARCHIVO COMPLETO: app.js (Incluye Auto-Login y Módulo Escáner)
 // =========================================================================================
 const SCRIPT_URL = 'TU_URL_DE_APPS_SCRIPT_AQUI'; // <-- Pega aquí tu URL (termina en /exec)
 let tokenSesion = localStorage.getItem('compukelc_token') || null;
@@ -35,7 +35,46 @@ const cambiarVista = (vistaId) => {
 document.addEventListener('DOMContentLoaded', () => {
   
   // ---------------------------------------------------------------------------------------
-  // 1. MÓDULO LOGIN Y NAVEGACIÓN
+  // 1. AUTO-LOGIN: Mantener sesión activa al presionar F5
+  // ---------------------------------------------------------------------------------------
+  if (tokenSesion) {
+    const btnLogin = $('#btn-login');
+    if (btnLogin) {
+      btnLogin.disabled = true;
+      btnLogin.textContent = 'Restaurando sesión...';
+    }
+    
+    fetch(SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'validarSesion', token: tokenSesion })
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.ok) {
+        // Token válido, saltar al dashboard
+        $('#vista-login').classList.add('oculto');
+        $('#vista-app').classList.remove('oculto');
+        
+        $('#chip-nombre').textContent = localStorage.getItem('usuario_nombre') || data.usuario;
+        $('#chip-cargo').textContent = localStorage.getItem('usuario_cargo') || 'Usuario';
+        
+        cargarDocumentos(); // Cargar los documentos automáticamente
+      } else {
+        localStorage.removeItem('compukelc_token');
+        tokenSesion = null;
+      }
+    })
+    .catch(err => console.error("Error restaurando sesión:", err))
+    .finally(() => {
+      if (btnLogin) {
+        btnLogin.disabled = false;
+        btnLogin.textContent = 'Iniciar sesión';
+      }
+    });
+  }
+
+  // ---------------------------------------------------------------------------------------
+  // 2. MÓDULO LOGIN Y NAVEGACIÓN
   // ---------------------------------------------------------------------------------------
   
   // Visualizar contraseña
@@ -80,12 +119,16 @@ document.addEventListener('DOMContentLoaded', () => {
           
           tokenSesion = resultado.token;
           
+          // Guardar siempre el token y los datos de interfaz para el F5
+          localStorage.setItem('compukelc_token', tokenSesion);
+          localStorage.setItem('usuario_nombre', resultado.usuario.nombre);
+          localStorage.setItem('usuario_cargo', resultado.usuario.cargo);
+          
+          // Recordar usuario en el input si está marcado
           if ($('#input-recordar').checked) {
             localStorage.setItem('usuario_guardado', usuario);
-            localStorage.setItem('compukelc_token', tokenSesion);
           } else {
             localStorage.removeItem('usuario_guardado');
-            localStorage.removeItem('compukelc_token');
           }
         } else {
           errorDiv.textContent = resultado.error;
@@ -101,7 +144,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Autocompletado
+  // Autocompletado de usuario guardado
   const usuarioGuardado = localStorage.getItem('usuario_guardado');
   if (usuarioGuardado) {
     $('#input-usuario').value = usuarioGuardado;
@@ -125,6 +168,8 @@ document.addEventListener('DOMContentLoaded', () => {
   if (btnLogout) {
     btnLogout.addEventListener('click', () => {
       localStorage.removeItem('compukelc_token');
+      localStorage.removeItem('usuario_nombre');
+      localStorage.removeItem('usuario_cargo');
       tokenSesion = null;
       $('#vista-app').classList.add('oculto');
       $('#vista-login').classList.remove('oculto');
@@ -153,7 +198,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ---------------------------------------------------------------------------------------
-// 2. MÓDULO DE DOCUMENTOS (TABLA)
+// 3. MÓDULO DE DOCUMENTOS (TABLA)
 // ---------------------------------------------------------------------------------------
 
 async function cargarDocumentos() {
@@ -226,7 +271,7 @@ function actualizarFiltros(disponibles) {
 
 
 // ---------------------------------------------------------------------------------------
-// 3. MÓDULO DE SUBIDA DE ARCHIVOS
+// 4. MÓDULO DE SUBIDA DE ARCHIVOS
 // ---------------------------------------------------------------------------------------
 
 function configurarEventosSubida() {
@@ -366,7 +411,6 @@ async function subirArchivosADrive() {
     }
   }
   
-  // Limpiar completados después de 2 segundos
   setTimeout(() => {
     archivosEnCola = archivosEnCola.filter(a => a.estado !== 'listo');
     renderizarListaArchivos();
@@ -376,7 +420,7 @@ async function subirArchivosADrive() {
 
 
 // ---------------------------------------------------------------------------------------
-// 4. MÓDULO ESCÁNER (CÁMARA Y PDF)
+// 5. MÓDULO ESCÁNER (CÁMARA Y PDF)
 // ---------------------------------------------------------------------------------------
 
 function configurarEventosEscaner() {
