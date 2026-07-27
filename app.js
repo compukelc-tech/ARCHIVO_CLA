@@ -5,7 +5,7 @@ let capturasEscaner = [];
 let streamCamaraActual = null;
 let formatoElegido = 'pdf';
 let archivosEnCola = [];
-const GOOGLE_APP_URL = 'URL_DE_TU_WEB_APP_AQUI'; // <-- REEMPLAZA ESTO
+const GOOGLE_APP_URL = 'https://script.google.com/macros/s/AKfycbylGeZOzFB8PuaVHPS-eJat49vxwIM3kgUkWhORqpZsxcfciOh1xmAOXlEySkYtJaa2/exec'; // <-- REEMPLAZA ESTO
 
 // =========================================================================================
 // INICIALIZACIÓN
