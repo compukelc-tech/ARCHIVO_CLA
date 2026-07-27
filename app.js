@@ -8,9 +8,87 @@ let archivosEnCola = [];
 const GOOGLE_APP_URL = 'https://script.google.com/macros/s/AKfycbylGeZOzFB8PuaVHPS-eJat49vxwIM3kgUkWhORqpZsxcfciOh1xmAOXlEySkYtJaa2/exec'; 
 
 // =========================================================================================
+// ENLACE A MATRIZ CENTRAL (SISTEMA DE CONTROL)
+// =========================================================================================
+// REEMPLAZA esto con la URL publicada (App Web) de tu Dashboard Central
+const URL_SISTEMA_CENTRAL = 'https://script.google.com/macros/s/TU_SCRIPT_ID_CENTRAL/exec'; 
+const ID_INSTANCIA_ARCHIVO = 'ARC-001'; // Debe coincidir con el ID registrado en la matriz
+
+async function sincronizarConMatriz() {
+  try {
+    // 1. Inyección de Publicidad y Avisos
+    const resAviso = await fetch(`${URL_SISTEMA_CENTRAL}?api=true&accion=obtenerAviso&idEmpresa=${ID_INSTANCIA_ARCHIVO}`);
+    const dataAviso = await resAviso.json();
+
+    if (dataAviso && dataAviso.activo) {
+      inyectarAvisoGlobal(dataAviso);
+    }
+
+    // 2. Candado de Seguridad (Verificación de Estado)
+    const resEstado = await fetch(`${URL_SISTEMA_CENTRAL}?api=true&idEmpresa=${ID_INSTANCIA_ARCHIVO}`);
+    const dataEstado = await resEstado.json();
+
+    if (dataEstado && dataEstado.estado) {
+      const estadoActual = dataEstado.estado.toString().toUpperCase();
+      if (estadoActual === 'INACTIVO' || estadoActual === 'MANTENIMIENTO') {
+        bloquearSistemaPorMatriz(estadoActual, dataEstado.alerta);
+      }
+    }
+  } catch (error) {
+    console.warn('Sincronización con la Matriz Central fallida:', error);
+  }
+}
+
+function inyectarAvisoGlobal(aviso) {
+  const banner = document.createElement('div');
+  banner.style.background = aviso.color || '#d94a38'; 
+  banner.style.color = '#fff';
+  banner.style.padding = '12px 24px';
+  banner.style.textAlign = 'center';
+  banner.style.fontFamily = 'var(--font-body, sans-serif)';
+  banner.style.fontSize = '14px';
+  banner.style.zIndex = '9999';
+  banner.style.position = 'relative';
+  banner.style.display = 'flex';
+  banner.style.justifyContent = 'center';
+  banner.style.alignItems = 'center';
+  banner.style.gap = '15px';
+  banner.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+  
+  let htmlContent = `<span><strong>${aviso.titulo}:</strong> ${aviso.mensaje}</span>`;
+  
+  if (aviso.url) {
+    htmlContent += `<a href="${aviso.url}" target="_blank" style="color: #fff; text-decoration: none; background: rgba(0,0,0,0.25); padding: 5px 12px; border-radius: 6px; font-weight: 600; font-size: 12px; transition: 0.2s;">Ver detalles</a>`;
+  }
+  
+  banner.innerHTML = htmlContent;
+  document.body.insertBefore(banner, document.body.firstChild);
+}
+
+function bloquearSistemaPorMatriz(estado, mensajePersonalizado) {
+  let mensaje = mensajePersonalizado || (estado === 'MANTENIMIENTO' 
+    ? 'Este sistema se encuentra actualmente en mantenimiento programado. Intente más tarde.' 
+    : 'Acceso denegado. La instancia ha sido desactivada desde la Matriz Central.');
+
+  // Sobrescribe todo el HTML de la página instantáneamente
+  document.body.innerHTML = `
+    <div style="height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; background: #0B0F17; color: #E7ECF3; font-family: 'Inter', sans-serif; text-align: center; padding: 30px;">
+        <h1 style="color: #F45B69; margin-bottom: 15px; font-family: 'Space Grotesk', sans-serif; text-transform: uppercase;">${estado}</h1>
+        <p style="color: #8A96AC; max-width: 400px; line-height: 1.5;">${mensaje}</p>
+        <div style="margin-top: 40px; border-top: 1px dashed #29344A; padding-top: 20px;">
+            <p style="font-size: 12px; color: #4C8BF5; margin: 0; font-weight: 600;">SISTEMA CENTRAL DE CONTROL</p>
+            <p style="font-size: 11px; color: #8A96AC; margin-top: 5px;">compukelc</p>
+        </div>
+    </div>
+  `;
+}
+
+// =========================================================================================
 // INICIALIZACIÓN
 // =========================================================================================
 document.addEventListener('DOMContentLoaded', () => {
+  sincronizarConMatriz();
+  
   configurarEventosLogin();
   configurarEventosNavegacion();
   configurarEventosSubida(); 
@@ -490,37 +568,29 @@ function finalizarFlujoEscaneo() {
 let eventoInstalacion;
 
 window.addEventListener('beforeinstallprompt', (e) => {
-  // Prevenir que Chrome muestre el cartel automáticamente
   e.preventDefault();
-  // Guardar el evento para poder dispararlo luego
   eventoInstalacion = e;
   
-  // Mostrar el botón de instalación en la interfaz
   const btnInstalar = document.getElementById('btn-instalar-pwa');
   if (btnInstalar) {
     btnInstalar.classList.remove('oculto');
     
-    // Configurar el click para instalar
     btnInstalar.addEventListener('click', async () => {
       if (!eventoInstalacion) return;
       
-      // Mostrar el prompt nativo de instalación
       eventoInstalacion.prompt();
       
-      // Esperar la respuesta del usuario
       const { outcome } = await eventoInstalacion.userChoice;
       if (outcome === 'accepted') {
         console.log('El usuario instaló la aplicación con éxito');
-        btnInstalar.classList.add('oculto'); // Ocultar el botón ya que se instaló
+        btnInstalar.classList.add('oculto'); 
       }
       
-      // Limpiar el evento
       eventoInstalacion = null;
     });
   }
 });
 
-// Ocultar botón si la app ya fue instalada (y se está abriendo de forma independiente)
 window.addEventListener('appinstalled', () => {
   const btnInstalar = document.getElementById('btn-instalar-pwa');
   if (btnInstalar) btnInstalar.classList.add('oculto');
