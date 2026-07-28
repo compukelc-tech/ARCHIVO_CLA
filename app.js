@@ -15,11 +15,15 @@ document.addEventListener('DOMContentLoaded', () => {
   configurarEventosNavegacion();
   configurarEventosSubida(); 
   configurarEventosEscaner();
+  configurarEventosDocumentos(); // NUEVO: Inicializa los filtros de documentos
   
-  // Si ya hay sesión al recargar la página, cargar carpetas
+  // CORRECCIÓN SESIÓN: Si ya hay sesión al recargar la página, ocultar login y cargar app
   const token = localStorage.getItem('compukelc_token') || sessionStorage.getItem('compukelc_token');
   if (token) {
+    document.getElementById('vista-login').classList.add('oculto');
+    document.getElementById('vista-app').classList.remove('oculto');
     cargarCarpetas(token);
+    cargarDocumentos(); // Cargar la tabla automáticamente
   }
 
   if ('serviceWorker' in navigator) {
@@ -85,7 +89,8 @@ function configurarEventosLogin() {
           document.getElementById('chip-nombre').textContent = datos.usuario.nombre || datos.usuario.usuario;
           document.getElementById('chip-cargo').textContent = datos.usuario.cargo || datos.usuario.rol;
           
-          cargarCarpetas(datos.token); 
+          cargarCarpetas(datos.token);
+          cargarDocumentos(); // Cargar la tabla al entrar
         } else {
           errorDiv.textContent = datos.error || 'Error de credenciales';
           errorDiv.classList.remove('oculto');
@@ -102,12 +107,14 @@ function configurarEventosLogin() {
 
   const btnLogout = document.getElementById('btn-logout');
   if (btnLogout) {
-    btnLogout.addEventListener('click', () => {
-      localStorage.removeItem('compukelc_token');
-      sessionStorage.removeItem('compukelc_token');
-      window.location.reload();
-    });
+    btnLogout.addEventListener('click', cerrarSesion);
   }
+}
+
+function cerrarSesion() {
+  localStorage.removeItem('compukelc_token');
+  sessionStorage.removeItem('compukelc_token');
+  window.location.reload();
 }
 
 // =========================================================================================
@@ -120,6 +127,11 @@ function configurarEventosNavegacion() {
       navItems.forEach(b => b.classList.remove('activo'));
       btn.classList.add('activo');
       cambiarVista(btn.dataset.vista);
+      
+      // Actualizar listado siempre que se navegue a la pestaña de documentos
+      if(btn.dataset.vista === 'documentos') {
+        cargarDocumentos();
+      }
     });
   });
 }
@@ -136,6 +148,133 @@ function mostrarToast(mensaje, tipo) {
   toast.className = '';
   toast.classList.add('mostrar', tipo);
   setTimeout(() => toast.classList.remove('mostrar'), 3000);
+}
+
+// =========================================================================================
+// MÓDULO DOCUMENTOS (NUEVO) — Generación de listados
+// =========================================================================================
+function configurarEventosDocumentos() {
+  document.getElementById('filtro-anio').addEventListener('change', cargarDocumentos);
+  document.getElementById('filtro-mes').addEventListener('change', cargarDocumentos);
+  document.getElementById('filtro-dia').addEventListener('change', cargarDocumentos);
+  document.getElementById('filtro-texto').addEventListener('input', filtrarTablaTexto);
+}
+
+async function cargarDocumentos() {
+  const token = localStorage.getItem('compukelc_token') || sessionStorage.getItem('compukelc_token');
+  if (!token) return;
+
+  const anio = document.getElementById('filtro-anio').value;
+  const mes = document.getElementById('filtro-mes').value;
+  const dia = document.getElementById('filtro-dia').value;
+
+  const vacioDiv = document.getElementById('documentos-vacio');
+  const tabla = document.getElementById('tabla-documentos');
+
+  vacioDiv.textContent = 'Cargando documentos...';
+  vacioDiv.classList.remove('oculto');
+  tabla.classList.add('oculto');
+
+  try {
+    const res = await fetch(GOOGLE_APP_URL, {
+      method: 'POST',
+      body: JSON.stringify({
+        action: 'obtenerRegistro',
+        token: token,
+        filtros: { anio, mes, dia }
+      })
+    });
+
+    const datos = await res.json();
+
+    if (datos.ok) {
+      actualizarDesplegables(datos.disponibles);
+      renderizarTabla(datos.registros);
+    } else {
+      if(datos.error && (datos.error.includes('expirada') || datos.error.includes('inválido'))){
+         cerrarSesion();
+      } else {
+         vacioDiv.textContent = 'Error: ' + datos.error;
+      }
+    }
+  } catch (error) {
+    vacioDiv.textContent = 'Error de conexión al cargar el archivo de compukelc.';
+  }
+}
+
+function actualizarDesplegables(disp) {
+  const llenar = (id, valores, etiqueta) => {
+    const sel = document.getElementById(id);
+    const valActual = sel.value;
+    sel.innerHTML = `<option value="todos">${etiqueta}: todos</option>`;
+    valores.forEach(v => {
+      const opt = document.createElement('option');
+      opt.value = v;
+      opt.textContent = v;
+      sel.appendChild(opt);
+    });
+    if (valores.includes(valActual)) sel.value = valActual;
+  };
+
+  llenar('filtro-anio', disp.anios, 'Año');
+  llenar('filtro-mes', disp.meses, 'Mes');
+  llenar('filtro-dia', disp.dias, 'Día');
+}
+
+function renderizarTabla(registros) {
+  const vacioDiv = document.getElementById('documentos-vacio');
+  const tabla = document.getElementById('tabla-documentos');
+  
+  // Guardamos los registros globalmente para poder filtrar por texto sin volver a pedir al servidor
+  window.registrosActuales = registros; 
+
+  if (registros.length === 0) {
+    vacioDiv.textContent = 'No hay documentos que coincidan con los filtros.';
+    vacioDiv.classList.remove('oculto');
+    tabla.classList.add('oculto');
+  } else {
+    vacioDiv.classList.add('oculto');
+    tabla.classList.remove('oculto');
+    filtrarTablaTexto(); // Aplicar el filtro de texto inmediatamente
+  }
+}
+
+function filtrarTablaTexto() {
+  const textoBusqueda = document.getElementById('filtro-texto').value.toLowerCase();
+  const tbody = document.getElementById('cuerpo-documentos');
+  const registros = window.registrosActuales || [];
+  const vacioDiv = document.getElementById('documentos-vacio');
+  const tabla = document.getElementById('tabla-documentos');
+
+  tbody.innerHTML = '';
+  let contador = 0;
+
+  registros.forEach(r => {
+    const nombre = r.nombreArchivo || '';
+    const carpeta = r.carpetaDestino || '';
+    
+    if (nombre.toLowerCase().includes(textoBusqueda) || carpeta.toLowerCase().includes(textoBusqueda)) {
+      contador++;
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><a href="${r.url}" target="_blank" rel="noopener noreferrer">${nombre}</a></td>
+        <td>${carpeta}</td>
+        <td class="fecha-mono">${r.fecha}</td>
+        <td class="fecha-mono">${r.hora}</td>
+        <td>${r.tipo}</td>
+      `;
+      tbody.appendChild(tr);
+    }
+  });
+
+  if (contador === 0 && registros.length > 0) {
+     tabla.classList.add('oculto');
+     vacioDiv.textContent = 'Ningún documento coincide con la búsqueda.';
+     vacioDiv.classList.remove('oculto');
+  } else if (registros.length > 0) {
+     tabla.classList.remove('oculto');
+     vacioDiv.classList.add('oculto');
+  }
 }
 
 // =========================================================================================
@@ -232,6 +371,7 @@ async function subirArchivosADrive() {
   
   if (!token) {
     mostrarToast('Error: Sesión expirada.', 'error');
+    cerrarSesion();
     return;
   }
 
@@ -273,6 +413,8 @@ async function subirArchivosADrive() {
   if (archivosEnCola.every(a => a.estado === 'listo')) {
     mostrarToast('Archivos guardados en compukelc', 'exito');
     inputCarpeta.value = '';
+    cargarCarpetas(token); // Refrescar lista de carpetas
+    
     setTimeout(() => {
       archivosEnCola = [];
       renderizarListaArchivos();
@@ -490,37 +632,26 @@ function finalizarFlujoEscaneo() {
 let eventoInstalacion;
 
 window.addEventListener('beforeinstallprompt', (e) => {
-  // Prevenir que Chrome muestre el cartel automáticamente
   e.preventDefault();
-  // Guardar el evento para poder dispararlo luego
   eventoInstalacion = e;
   
-  // Mostrar el botón de instalación en la interfaz
   const btnInstalar = document.getElementById('btn-instalar-pwa');
   if (btnInstalar) {
     btnInstalar.classList.remove('oculto');
     
-    // Configurar el click para instalar
     btnInstalar.addEventListener('click', async () => {
       if (!eventoInstalacion) return;
-      
-      // Mostrar el prompt nativo de instalación
       eventoInstalacion.prompt();
       
-      // Esperar la respuesta del usuario
       const { outcome } = await eventoInstalacion.userChoice;
       if (outcome === 'accepted') {
-        console.log('El usuario instaló la aplicación con éxito');
-        btnInstalar.classList.add('oculto'); // Ocultar el botón ya que se instaló
+        btnInstalar.classList.add('oculto'); 
       }
-      
-      // Limpiar el evento
       eventoInstalacion = null;
     });
   }
 });
 
-// Ocultar botón si la app ya fue instalada (y se está abriendo de forma independiente)
 window.addEventListener('appinstalled', () => {
   const btnInstalar = document.getElementById('btn-instalar-pwa');
   if (btnInstalar) btnInstalar.classList.add('oculto');
