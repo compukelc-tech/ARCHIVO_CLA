@@ -241,6 +241,10 @@ function renderizarTabla(registros) {
 
 function filtrarTablaTexto() {
   const textoBusqueda = document.getElementById('filtro-texto').value.toLowerCase();
+  const anio = document.getElementById('filtro-anio').value;
+  const mes = document.getElementById('filtro-mes').value;
+  const dia = document.getElementById('filtro-dia').value;
+  
   const tbody = document.getElementById('cuerpo-documentos');
   const registros = window.registrosActuales || [];
   const vacioDiv = document.getElementById('documentos-vacio');
@@ -248,6 +252,14 @@ function filtrarTablaTexto() {
 
   tbody.innerHTML = '';
   let contador = 0;
+
+  // NUEVA CONDICIÓN: Si no hay texto de búsqueda y no se ha seleccionado ningún filtro, se oculta la lista.
+  if (textoBusqueda === '' && anio === 'todos' && mes === 'todos' && dia === 'todos') {
+     tabla.classList.add('oculto');
+     vacioDiv.textContent = 'Utiliza la barra de búsqueda o los filtros de fecha para visualizar los documentos.';
+     vacioDiv.classList.remove('oculto');
+     return; // Finaliza la función aquí para no renderizar los archivos
+  }
 
   registros.forEach(r => {
     const nombre = r.nombreArchivo || '';
