@@ -1,16 +1,15 @@
-// =========================================================================================
 // VARIABLES GLOBALES
-// =========================================================================================
 let capturasEscaner = [];
 let streamCamaraActual = null;
 let formatoElegido = 'pdf';
 let archivosEnCola = [];
-const GOOGLE_APP_URL = 'https://script.google.com/macros/s/AKfycbylGeZOzFB8PuaVHPS-eJat49vxwIM3kgUkWhORqpZsxcfciOh1xmAOXlEySkYtJaa2/exec';
-// =========================================================================================
+
+// Tu URL correcta del Archivo Personal
+const GOOGLE_APP_URL = 'https://script.google.com/macros/s/AKfycbylGeZOzFB8PuaVHPS-eJat49vxwIM3kgUkWhORqpZsxcfciOh1xmAOXlEySkYtJaa2/exec'; 
+
 // INICIALIZACIÓN Y BARRERA DE SEGURIDAD MATRIZ
-// =========================================================================================
 document.addEventListener('DOMContentLoaded', () => {
-  verificarBloqueoCentral(); // 🛡️ BARRERA: Ejecutar apenas cargue la página
+  verificarBloqueoCentral(); 
   
   configurarEventosLogin();
   configurarEventosNavegacion();
@@ -18,43 +17,42 @@ document.addEventListener('DOMContentLoaded', () => {
   configurarEventosEscaner();
   configurarEventosDocumentos();
   
-  // CORRECCIÓN SESIÓN: Si ya hay sesión al recargar la página, ocultar login y cargar app
   const token = localStorage.getItem('compukelc_token') || sessionStorage.getItem('compukelc_token');
   if (token) {
     document.getElementById('vista-login').classList.add('oculto');
     document.getElementById('vista-app').classList.remove('oculto');
     cargarCarpetas(token);
-    cargarDocumentos(); // Cargar la tabla automáticamente
+    cargarDocumentos(); 
   }
 
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js')
-      .then(() => console.log('Service Worker registrado'))
-      .catch(err => console.log('Error en Service Worker:', err));
+    navigator.serviceWorker.register('sw.js').catch(err => console.log('SW Error:', err));
   }
 });
 
 async function verificarBloqueoCentral() {
   try {
-    const respuesta = await fetch(GOOGLE_APP_URL);
+    // Usamos POST con un action vacío para evitar errores de redirección 404 (CORS) de Google Script
+    const respuesta = await fetch(GOOGLE_APP_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'ping' })
+    });
     const datos = await respuesta.json();
 
     if (datos.error === 'ACCESO_BLOQUEADO') {
       activarPantallaBloqueo(datos.mensaje);
     }
   } catch (error) {
-    console.error("Error verificando estado central:", error);
+    console.log("Verificación silenciosa falló, se reintentará en login.");
   }
 }
 
 function activarPantallaBloqueo(mensajeCentral) {
-  // Ocultamos todo
   const vistaLogin = document.getElementById('vista-login');
   const vistaApp = document.getElementById('vista-app');
   if(vistaLogin) vistaLogin.style.display = 'none';
   if(vistaApp) vistaApp.style.display = 'none';
   
-  // Mostramos el contenedor de bloqueo
   const vistaBloqueo = document.getElementById('vista-bloqueo');
   if(vistaBloqueo) {
     vistaBloqueo.style.display = 'flex';
@@ -62,9 +60,7 @@ function activarPantallaBloqueo(mensajeCentral) {
   }
 }
 
-// =========================================================================================
-// MÓDULO INTERFAZ — Login y Visor de contraseñas
-// =========================================================================================
+// MÓDULO INTERFAZ — Login
 function configurarEventosLogin() {
   const btnToggleClave = document.getElementById('btn-toggle-clave');
   const inputClave = document.getElementById('input-clave');
@@ -74,12 +70,6 @@ function configurarEventosLogin() {
     btnToggleClave.addEventListener('click', () => {
       const esPassword = inputClave.getAttribute('type') === 'password';
       inputClave.setAttribute('type', esPassword ? 'text' : 'password');
-      
-      if (esPassword) {
-        btnToggleClave.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24M1 1l22 22"/></svg>`;
-      } else {
-        btnToggleClave.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>`;
-      }
     });
   }
 
@@ -120,12 +110,11 @@ function configurarEventosLogin() {
           
           document.getElementById('vista-login').classList.add('oculto');
           document.getElementById('vista-app').classList.remove('oculto');
-          
           document.getElementById('chip-nombre').textContent = datos.usuario.nombre || datos.usuario.usuario;
           document.getElementById('chip-cargo').textContent = datos.usuario.cargo || datos.usuario.rol;
           
           cargarCarpetas(datos.token);
-          cargarDocumentos(); // Cargar la tabla al entrar
+          cargarDocumentos(); 
         } else {
           errorDiv.textContent = datos.error || 'Error de credenciales';
           errorDiv.classList.remove('oculto');
@@ -141,9 +130,7 @@ function configurarEventosLogin() {
   }
 
   const btnLogout = document.getElementById('btn-logout');
-  if (btnLogout) {
-    btnLogout.addEventListener('click', cerrarSesion);
-  }
+  if (btnLogout) btnLogout.addEventListener('click', cerrarSesion);
 }
 
 function cerrarSesion() {
@@ -152,9 +139,7 @@ function cerrarSesion() {
   window.location.reload();
 }
 
-// =========================================================================================
 // NAVEGACIÓN Y UTILIDADES UI
-// =========================================================================================
 function configurarEventosNavegacion() {
   const navItems = document.querySelectorAll('.nav-item');
   navItems.forEach(btn => {
@@ -162,10 +147,7 @@ function configurarEventosNavegacion() {
       navItems.forEach(b => b.classList.remove('activo'));
       btn.classList.add('activo');
       cambiarVista(btn.dataset.vista);
-      
-      if(btn.dataset.vista === 'documentos') {
-        cargarDocumentos();
-      }
+      if(btn.dataset.vista === 'documentos') cargarDocumentos();
     });
   });
 }
@@ -184,9 +166,7 @@ function mostrarToast(mensaje, tipo) {
   setTimeout(() => toast.classList.remove('mostrar'), 3000);
 }
 
-// =========================================================================================
-// MÓDULO DOCUMENTOS — Generación de listados
-// =========================================================================================
+// MÓDULO DOCUMENTOS
 function configurarEventosDocumentos() {
   document.getElementById('filtro-anio').addEventListener('change', cargarDocumentos);
   document.getElementById('filtro-mes').addEventListener('change', cargarDocumentos);
@@ -201,7 +181,6 @@ async function cargarDocumentos() {
   const anio = document.getElementById('filtro-anio').value;
   const mes = document.getElementById('filtro-mes').value;
   const dia = document.getElementById('filtro-dia').value;
-
   const vacioDiv = document.getElementById('documentos-vacio');
   const tabla = document.getElementById('tabla-documentos');
 
@@ -212,13 +191,8 @@ async function cargarDocumentos() {
   try {
     const res = await fetch(GOOGLE_APP_URL, {
       method: 'POST',
-      body: JSON.stringify({
-        action: 'obtenerRegistro',
-        token: token,
-        filtros: { anio, mes, dia }
-      })
+      body: JSON.stringify({ action: 'obtenerRegistro', token: token, filtros: { anio, mes, dia } })
     });
-
     const datos = await res.json();
     
     // 🛡️ BARRERA: Por si lo bloquean mientras navega
@@ -255,7 +229,6 @@ function actualizarDesplegables(disp) {
     });
     if (valores.includes(valActual)) sel.value = valActual;
   };
-
   llenar('filtro-anio', disp.anios, 'Año');
   llenar('filtro-mes', disp.meses, 'Mes');
   llenar('filtro-dia', disp.dias, 'Día');
@@ -266,7 +239,6 @@ function renderizarTabla(registros) {
   const tabla = document.getElementById('tabla-documentos');
   
   window.registrosActuales = registros; 
-
   if (registros.length === 0) {
     vacioDiv.textContent = 'No hay documentos que coincidan con los filtros.';
     vacioDiv.classList.remove('oculto');
@@ -327,9 +299,7 @@ function filtrarTablaTexto() {
   }
 }
 
-// =========================================================================================
 // MÓDULO SUBIDA DE ARCHIVOS
-// =========================================================================================
 function configurarEventosSubida() {
   const dropzone = document.getElementById('dropzone');
   const inputArchivos = document.getElementById('input-archivos');
@@ -338,14 +308,8 @@ function configurarEventosSubida() {
   if (!dropzone || !inputArchivos || !btnSubir) return;
 
   dropzone.addEventListener('click', () => inputArchivos.click());
-  
-  dropzone.addEventListener('dragover', (e) => {
-    e.preventDefault();
-    dropzone.classList.add('arrastrando');
-  });
-  
+  dropzone.addEventListener('dragover', (e) => { e.preventDefault(); dropzone.classList.add('arrastrando'); });
   dropzone.addEventListener('dragleave', () => dropzone.classList.remove('arrastrando'));
-  
   dropzone.addEventListener('drop', (e) => {
     e.preventDefault();
     dropzone.classList.remove('arrastrando');
@@ -390,7 +354,6 @@ function renderizarListaArchivos() {
   if(!lista) return;
   
   lista.innerHTML = '';
-
   archivosEnCola.forEach((archivo, index) => {
     const item = document.createElement('div');
     item.className = 'item-archivo';
@@ -398,9 +361,7 @@ function renderizarListaArchivos() {
       <div class="nombre">${archivo.nombre}</div>
       <div class="peso">${(archivo.peso / 1024).toFixed(1)} KB</div>
       <div class="estado ${archivo.estado}">${archivo.estado}</div>
-      ${archivo.estado === 'pendiente' || archivo.estado === 'error' 
-        ? `<button class="btn-quitar" onclick="quitarArchivo(${index})">✕</button>` 
-        : ''}
+      ${archivo.estado === 'pendiente' || archivo.estado === 'error' ? `<button class="btn-quitar" onclick="quitarArchivo(${index})">✕</button>` : ''}
     `;
     lista.appendChild(item);
   });
@@ -435,19 +396,13 @@ async function subirArchivosADrive() {
       const res = await fetch(GOOGLE_APP_URL, {
         method: 'POST',
         body: JSON.stringify({
-          action: 'subirArchivo',
-          token: token,
-          nombreArchivo: archivo.nombre,
-          base64Data: archivo.base64,
-          carpetaDestino: carpeta,
-          tipoMime: archivo.mime,
-          tipoOrigen: 'Subida manual'
+          action: 'subirArchivo', token: token, nombreArchivo: archivo.nombre,
+          base64Data: archivo.base64, carpetaDestino: carpeta, tipoMime: archivo.mime, tipoOrigen: 'Subida manual'
         })
       });
-      
       const datos = await res.json();
       
-      // 🛡️ BARRERA: Por si lo bloquean mientras sube documentos
+      // 🛡️ BARRERA
       if (datos.error === 'ACCESO_BLOQUEADO') {
         activarPantallaBloqueo(datos.mensaje);
         return;
@@ -470,11 +425,7 @@ async function subirArchivosADrive() {
     mostrarToast('Archivos guardados en compukelc', 'exito');
     inputCarpeta.value = '';
     cargarCarpetas(token); 
-    
-    setTimeout(() => {
-      archivosEnCola = [];
-      renderizarListaArchivos();
-    }, 2000);
+    setTimeout(() => { archivosEnCola = []; renderizarListaArchivos(); }, 2000);
   }
 }
 
@@ -503,17 +454,12 @@ async function cargarCarpetas(token) {
         });
       }
     }
-  } catch (error) {
-    console.error('No se pudieron cargar las sugerencias de carpetas.');
-  }
+  } catch (error) { console.error('No se pudieron cargar las carpetas.'); }
 }
 
-// =========================================================================================
-// MÓDULO ESCÁNER — cámara y PDF
-// =========================================================================================
+// MÓDULO ESCÁNER
 function configurarEventosEscaner() {
   const $ = (selector) => document.querySelector(selector);
-  
   $('#btn-abrir-camara').addEventListener('click', abrirModalCamara);
   $('#btn-cerrar-camara').addEventListener('click', cerrarModalCamara);
   $('#btn-tomar-foto').addEventListener('click', tomarFotoDesdeCamara);
@@ -524,7 +470,7 @@ function configurarEventosEscaner() {
     if (e.target.files.length) {
       procesarArchivosSeleccionados(e.target.files);
       cambiarVista('subir');
-      mostrarToast('Archivo(s) agregados a la cola.', 'exito');
+      mostrarToast('Archivo(s) agregados.', 'exito');
     }
   });
 
@@ -545,7 +491,6 @@ async function abrirModalCamara() {
     const camaras = dispositivos.filter((d) => d.kind === 'videoinput');
     const select = $('#select-camara');
     select.innerHTML = '';
-    
     let idCamaraPrincipal = null;
 
     camaras.forEach((cam, i) => {
@@ -553,39 +498,28 @@ async function abrirModalCamara() {
       opcion.value = cam.deviceId;
       opcion.textContent = cam.label || ('Cámara ' + (i + 1));
       select.appendChild(opcion);
-
       const etiquetaStr = (cam.label || '').toLowerCase();
       if (etiquetaStr.includes('back') || etiquetaStr.includes('environment') || etiquetaStr.includes('trasera')) {
         idCamaraPrincipal = cam.deviceId;
       }
     });
 
-    if (!idCamaraPrincipal && camaras.length > 1) {
-        idCamaraPrincipal = camaras[camaras.length - 1].deviceId;
-    } else if (!idCamaraPrincipal && camaras.length === 1) {
-        idCamaraPrincipal = camaras[0].deviceId;
-    }
+    if (!idCamaraPrincipal && camaras.length > 1) idCamaraPrincipal = camaras[camaras.length - 1].deviceId;
+    else if (!idCamaraPrincipal && camaras.length === 1) idCamaraPrincipal = camaras[0].deviceId;
 
     if (idCamaraPrincipal) select.value = idCamaraPrincipal;
-
     select.addEventListener('change', () => iniciarStreamCamara(select.value));
     await iniciarStreamCamara(idCamaraPrincipal);
-  } catch (e) {
-    mostrarToast('No se pudo acceder a la cámara.', 'error');
-  }
+  } catch (e) { mostrarToast('No se pudo acceder a la cámara.', 'error'); }
 }
 
 async function iniciarStreamCamara(deviceId) {
   detenerStreamCamara();
-  const restricciones = {
-    video: deviceId ? { deviceId: { exact: deviceId } } : { facingMode: 'environment' }
-  };
+  const restricciones = { video: deviceId ? { deviceId: { exact: deviceId } } : { facingMode: 'environment' } };
   try {
       streamCamaraActual = await navigator.mediaDevices.getUserMedia(restricciones);
       document.querySelector('#video-escaner').srcObject = streamCamaraActual;
-  } catch (err) {
-      mostrarToast('Error al iniciar cámara', 'error');
-  }
+  } catch (err) { mostrarToast('Error al iniciar cámara', 'error'); }
 }
 
 function detenerStreamCamara() {
@@ -615,10 +549,7 @@ function tomarFotoDesdeCamara() {
 }
 
 function terminarCaptura() {
-  if (capturasEscaner.length === 0) {
-    mostrarToast('Toma al menos una foto antes de continuar', 'error');
-    return;
-  }
+  if (capturasEscaner.length === 0) return mostrarToast('Toma al menos una foto', 'error');
   cerrarModalCamara();
   document.querySelector('#modal-formato').classList.remove('oculto');
 }
@@ -626,15 +557,10 @@ function terminarCaptura() {
 function elegirFormato(formato) {
   formatoElegido = formato;
   document.querySelector('#modal-formato').classList.add('oculto');
-
-  if (formato === 'jpg') {
-    guardarCapturasComoJpg();
-  } else {
-    if (capturasEscaner.length > 1) {
-      document.querySelector('#modal-paginas').classList.remove('oculto');
-    } else {
-      finalizarCapturaComoPdf(false);
-    }
+  if (formato === 'jpg') guardarCapturasComoJpg();
+  else {
+    if (capturasEscaner.length > 1) document.querySelector('#modal-paginas').classList.remove('oculto');
+    else finalizarCapturaComoPdf(false);
   }
 }
 
@@ -642,12 +568,8 @@ function guardarCapturasComoJpg() {
   capturasEscaner.forEach((dataUrl, i) => {
     const base64 = dataUrl.split(',')[1];
     archivosEnCola.push({
-      id: 'scan' + Date.now() + i,
-      nombre: 'escaneo_' + Date.now() + '_' + (i + 1) + '.jpg',
-      base64,
-      mime: 'image/jpeg',
-      peso: Math.round(base64.length * 0.75),
-      estado: 'pendiente'
+      id: 'scan' + Date.now() + i, nombre: 'escaneo_' + Date.now() + '_' + (i + 1) + '.jpg',
+      base64, mime: 'image/jpeg', peso: Math.round(base64.length * 0.75), estado: 'pendiente'
     });
   });
   finalizarFlujoEscaneo();
@@ -657,7 +579,6 @@ function finalizarCapturaComoPdf(variasPaginas) {
   document.querySelector('#modal-paginas').classList.add('oculto');
   const { jsPDF } = window.jspdf;
   const pdf = new jsPDF({ unit: 'pt' });
-
   const paginas = variasPaginas ? capturasEscaner : [capturasEscaner[0]];
 
   paginas.forEach((dataUrl, i) => {
@@ -670,14 +591,9 @@ function finalizarCapturaComoPdf(variasPaginas) {
 
   const base64Pdf = pdf.output('datauristring').split(',')[1];
   archivosEnCola.push({
-    id: 'scanpdf' + Date.now(),
-    nombre: 'escaneo_' + Date.now() + '.pdf',
-    base64: base64Pdf,
-    mime: 'application/pdf',
-    peso: Math.round(base64Pdf.length * 0.75),
-    estado: 'pendiente'
+    id: 'scanpdf' + Date.now(), nombre: 'escaneo_' + Date.now() + '.pdf',
+    base64: base64Pdf, mime: 'application/pdf', peso: Math.round(base64Pdf.length * 0.75), estado: 'pendiente'
   });
-
   finalizarFlujoEscaneo();
 }
 
@@ -685,30 +601,22 @@ function finalizarFlujoEscaneo() {
   capturasEscaner = [];
   cambiarVista('subir');
   renderizarListaArchivos();
-  mostrarToast('Documento escaneado listo para subir.', 'exito');
+  mostrarToast('Documento listo.', 'exito');
 }
 
-// =========================================================================================
-// MÓDULO PWA — INSTALACIÓN Y EVENTOS
-// =========================================================================================
+// MÓDULO PWA
 let eventoInstalacion;
-
 window.addEventListener('beforeinstallprompt', (e) => {
   e.preventDefault();
   eventoInstalacion = e;
-  
   const btnInstalar = document.getElementById('btn-instalar-pwa');
   if (btnInstalar) {
     btnInstalar.classList.remove('oculto');
-    
     btnInstalar.addEventListener('click', async () => {
       if (!eventoInstalacion) return;
       eventoInstalacion.prompt();
-      
       const { outcome } = await eventoInstalacion.userChoice;
-      if (outcome === 'accepted') {
-        btnInstalar.classList.add('oculto'); 
-      }
+      if (outcome === 'accepted') btnInstalar.classList.add('oculto'); 
       eventoInstalacion = null;
     });
   }
