@@ -5,17 +5,19 @@ let capturasEscaner = [];
 let streamCamaraActual = null;
 let formatoElegido = 'pdf';
 let archivosEnCola = [];
-const GOOGLE_APP_URL = 'https://script.google.com/macros/s/AKfycbylGeZOzFB8PuaVHPS-eJat49vxwIM3kgUkWhORqpZsxcfciOh1xmAOXlEySkYtJaa2/exec'; 
+const GOOGLE_APP_URL = 'https://script.google.com/macros/s/AKfycbwrNk1OFEuscphb0lHH8BsoyzqU0py0O3k26hARPlq3JRmIFe-NGe1a7-hvGHhsx9R26w/exec'; 
 
 // =========================================================================================
-// INICIALIZACIÓN
+// INICIALIZACIÓN Y BARRERA DE SEGURIDAD MATRIZ
 // =========================================================================================
 document.addEventListener('DOMContentLoaded', () => {
+  verificarBloqueoCentral(); // 🛡️ BARRERA: Ejecutar apenas cargue la página
+  
   configurarEventosLogin();
   configurarEventosNavegacion();
   configurarEventosSubida(); 
   configurarEventosEscaner();
-  configurarEventosDocumentos(); // NUEVO: Inicializa los filtros de documentos
+  configurarEventosDocumentos();
   
   // CORRECCIÓN SESIÓN: Si ya hay sesión al recargar la página, ocultar login y cargar app
   const token = localStorage.getItem('compukelc_token') || sessionStorage.getItem('compukelc_token');
@@ -32,6 +34,34 @@ document.addEventListener('DOMContentLoaded', () => {
       .catch(err => console.log('Error en Service Worker:', err));
   }
 });
+
+async function verificarBloqueoCentral() {
+  try {
+    const respuesta = await fetch(GOOGLE_APP_URL);
+    const datos = await respuesta.json();
+
+    if (datos.error === 'ACCESO_BLOQUEADO') {
+      activarPantallaBloqueo(datos.mensaje);
+    }
+  } catch (error) {
+    console.error("Error verificando estado central:", error);
+  }
+}
+
+function activarPantallaBloqueo(mensajeCentral) {
+  // Ocultamos todo
+  const vistaLogin = document.getElementById('vista-login');
+  const vistaApp = document.getElementById('vista-app');
+  if(vistaLogin) vistaLogin.style.display = 'none';
+  if(vistaApp) vistaApp.style.display = 'none';
+  
+  // Mostramos el contenedor de bloqueo
+  const vistaBloqueo = document.getElementById('vista-bloqueo');
+  if(vistaBloqueo) {
+    vistaBloqueo.style.display = 'flex';
+    document.getElementById('mensaje-bloqueo').textContent = mensajeCentral;
+  }
+}
 
 // =========================================================================================
 // MÓDULO INTERFAZ — Login y Visor de contraseñas
@@ -75,6 +105,12 @@ function configurarEventosLogin() {
         });
         
         const datos = await respuesta.json();
+        
+        // 🛡️ BARRERA: Por si lo bloquean justo en este momento
+        if (datos.error === 'ACCESO_BLOQUEADO') {
+          activarPantallaBloqueo(datos.mensaje);
+          return;
+        }
         
         if (datos.ok) {
           if (recordar) {
@@ -128,7 +164,6 @@ function configurarEventosNavegacion() {
       btn.classList.add('activo');
       cambiarVista(btn.dataset.vista);
       
-      // Actualizar listado siempre que se navegue a la pestaña de documentos
       if(btn.dataset.vista === 'documentos') {
         cargarDocumentos();
       }
@@ -151,7 +186,7 @@ function mostrarToast(mensaje, tipo) {
 }
 
 // =========================================================================================
-// MÓDULO DOCUMENTOS (NUEVO) — Generación de listados
+// MÓDULO DOCUMENTOS — Generación de listados
 // =========================================================================================
 function configurarEventosDocumentos() {
   document.getElementById('filtro-anio').addEventListener('change', cargarDocumentos);
@@ -186,6 +221,12 @@ async function cargarDocumentos() {
     });
 
     const datos = await res.json();
+    
+    // 🛡️ BARRERA: Por si lo bloquean mientras navega
+    if (datos.error === 'ACCESO_BLOQUEADO') {
+      activarPantallaBloqueo(datos.mensaje);
+      return;
+    }
 
     if (datos.ok) {
       actualizarDesplegables(datos.disponibles);
@@ -225,7 +266,6 @@ function renderizarTabla(registros) {
   const vacioDiv = document.getElementById('documentos-vacio');
   const tabla = document.getElementById('tabla-documentos');
   
-  // Guardamos los registros globalmente para poder filtrar por texto sin volver a pedir al servidor
   window.registrosActuales = registros; 
 
   if (registros.length === 0) {
@@ -235,7 +275,7 @@ function renderizarTabla(registros) {
   } else {
     vacioDiv.classList.add('oculto');
     tabla.classList.remove('oculto');
-    filtrarTablaTexto(); // Aplicar el filtro de texto inmediatamente
+    filtrarTablaTexto(); 
   }
 }
 
@@ -253,12 +293,11 @@ function filtrarTablaTexto() {
   tbody.innerHTML = '';
   let contador = 0;
 
-  // NUEVA CONDICIÓN: Si no hay texto de búsqueda y no se ha seleccionado ningún filtro, se oculta la lista.
   if (textoBusqueda === '' && anio === 'todos' && mes === 'todos' && dia === 'todos') {
      tabla.classList.add('oculto');
      vacioDiv.textContent = 'Utiliza la barra de búsqueda o los filtros de fecha para visualizar los documentos.';
      vacioDiv.classList.remove('oculto');
-     return; // Finaliza la función aquí para no renderizar los archivos
+     return; 
   }
 
   registros.forEach(r => {
@@ -409,6 +448,12 @@ async function subirArchivosADrive() {
       
       const datos = await res.json();
       
+      // 🛡️ BARRERA: Por si lo bloquean mientras sube documentos
+      if (datos.error === 'ACCESO_BLOQUEADO') {
+        activarPantallaBloqueo(datos.mensaje);
+        return;
+      }
+      
       if (datos.ok) {
         archivo.estado = 'listo';
       } else {
@@ -425,7 +470,7 @@ async function subirArchivosADrive() {
   if (archivosEnCola.every(a => a.estado === 'listo')) {
     mostrarToast('Archivos guardados en compukelc', 'exito');
     inputCarpeta.value = '';
-    cargarCarpetas(token); // Refrescar lista de carpetas
+    cargarCarpetas(token); 
     
     setTimeout(() => {
       archivosEnCola = [];
@@ -441,6 +486,12 @@ async function cargarCarpetas(token) {
       body: JSON.stringify({ action: 'listarCarpetas', token: token })
     });
     const datos = await res.json();
+    
+    // 🛡️ BARRERA
+    if (datos.error === 'ACCESO_BLOQUEADO') {
+      activarPantallaBloqueo(datos.mensaje);
+      return;
+    }
     
     if (datos.ok && datos.carpetas) {
       const datalist = document.getElementById('lista-carpetas');
