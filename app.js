@@ -32,7 +32,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 async function verificarBloqueoCentral() {
   try {
-    // Usamos POST con un action vacío para evitar errores de redirección 404 (CORS) de Google Script
+    // Usamos POST con un action "ping" para evitar errores de redirección 404 (CORS) de Google Script
     const respuesta = await fetch(GOOGLE_APP_URL, {
       method: 'POST',
       body: JSON.stringify({ action: 'ping' })
@@ -48,15 +48,18 @@ async function verificarBloqueoCentral() {
 }
 
 function activarPantallaBloqueo(mensajeCentral) {
+  // Ocultamos las vistas normales forzando la clase
   const vistaLogin = document.getElementById('vista-login');
   const vistaApp = document.getElementById('vista-app');
-  if(vistaLogin) vistaLogin.style.display = 'none';
-  if(vistaApp) vistaApp.style.display = 'none';
+  if(vistaLogin) vistaLogin.classList.add('oculto');
+  if(vistaApp) vistaApp.classList.add('oculto');
   
+  // Mostramos el contenedor de bloqueo forzando el estilo para saltar el CSS conflictivo
   const vistaBloqueo = document.getElementById('vista-bloqueo');
   if(vistaBloqueo) {
-    vistaBloqueo.style.display = 'flex';
-    document.getElementById('mensaje-bloqueo').textContent = mensajeCentral;
+    vistaBloqueo.classList.remove('oculto');
+    vistaBloqueo.style.display = 'flex'; 
+    document.getElementById('mensaje-bloqueo').textContent = mensajeCentral || 'Mantenimiento en curso';
   }
 }
 
