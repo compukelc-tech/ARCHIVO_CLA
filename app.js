@@ -5,7 +5,7 @@ let capturasEscaner = [];
 let streamCamaraActual = null;
 let formatoElegido = 'pdf';
 let archivosEnCola = [];
-const GOOGLE_APP_URL = 'https://script.google.com/macros/s/AKfycbwrNk1OFEuscphb0lHH8BsoyzqU0py0O3k26hARPlq3JRmIFe-NGe1a7-hvGHhsx9R26w/exec'; 
+const GOOGLE_APP_URL = 'https://script.google.com/macros/s/AKfycbwy2jsRe0s3u8y25MaJXyk4_SJHUxqCLTmU7EHE2CHD4OuRHlZTOcOpHjqUkY4PZBqZ/exec'; 
 
 // =========================================================================================
 // INICIALIZACIÓN Y BARRERA DE SEGURIDAD MATRIZ
