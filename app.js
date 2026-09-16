@@ -123,7 +123,8 @@ function configurarEventosLogin() {
           errorDiv.classList.remove('oculto');
         }
       } catch (error) {
-        errorDiv.textContent = 'Error de conexión. Revisa tu internet.';
+        // Modificación aplicada aquí
+        errorDiv.textContent = 'Error de conexión. Verifica tu conexión a internet.';
         errorDiv.classList.remove('oculto');
       } finally {
         btnLogin.disabled = false;
@@ -419,7 +420,8 @@ async function subirArchivosADrive() {
       }
     } catch (error) {
       archivo.estado = 'error';
-      mostrarToast('Fallo de red al subir', 'error');
+      // Modificación aplicada aquí
+      mostrarToast('Fallo de red al subir el archivo', 'error');
     }
     renderizarListaArchivos();
   }
@@ -473,7 +475,8 @@ function configurarEventosEscaner() {
     if (e.target.files.length) {
       procesarArchivosSeleccionados(e.target.files);
       cambiarVista('subir');
-      mostrarToast('Archivo(s) agregados.', 'exito');
+      // Modificación aplicada aquí
+      mostrarToast('Archivo(s) agregado(s).', 'exito');
     }
   });
 
@@ -522,7 +525,10 @@ async function iniciarStreamCamara(deviceId) {
   try {
       streamCamaraActual = await navigator.mediaDevices.getUserMedia(restricciones);
       document.querySelector('#video-escaner').srcObject = streamCamaraActual;
-  } catch (err) { mostrarToast('Error al iniciar cámara', 'error'); }
+  } catch (err) { 
+      // Modificación aplicada aquí
+      mostrarToast('Error al iniciar la cámara', 'error'); 
+  }
 }
 
 function detenerStreamCamara() {
@@ -552,7 +558,8 @@ function tomarFotoDesdeCamara() {
 }
 
 function terminarCaptura() {
-  if (capturasEscaner.length === 0) return mostrarToast('Toma al menos una foto', 'error');
+  // Modificación aplicada aquí
+  if (capturasEscaner.length === 0) return mostrarToast('Toma al menos una fotografía', 'error');
   cerrarModalCamara();
   document.querySelector('#modal-formato').classList.remove('oculto');
 }
